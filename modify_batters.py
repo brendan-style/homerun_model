@@ -4,40 +4,6 @@ Created on Fri Jun  6 16:54:09 2025
 
 @author: Brendan
 """
-#%% PA Modifiers in case I need is in the future
-
-"""
-for this, we will be using previosuly collected data, every game from 2016-2023,
-and measuring the effect of plate appearance count on home run chances for our formula
-"""
-import pandas as pd
-stats = pd.read_csv('matchups_final.csv')
-stats = stats.drop(columns= 'Unnamed: 0')
-stats['hr'] = stats['hr'].clip(upper=1)
-pas = stats.groupby('pa').agg(
-    hr=('hr','sum'),
-    count=('pa','size'))
-pas.loc['1'] = pas.loc[1]
-pas.loc['2'] = pas.loc[2]
-pas.loc['3+'] = pas.loc[3] + pas.loc[4]
-pas = pas.drop([1,2,3,4])
-pas['rate'] = round(pas['hr']/pas['count'],3)
-
-"""
-We have grouped anything over 3 PA's together due to a relative small sample size
-for matchups with 4 PA's"""
-
-
-tot = 0
-for i in range(len(pas)):
-    if i == 3:
-        i = '3+'
-    weight = pas.rate[i]*(pas['count'][i]/sum(pas['count']))
-    tot += weight #gives us average
-    
-pas['modifier'] = round(pas['rate']/tot,2)
-pas = pas.reset_index()
-del tot, weight, stats,i
 #%%
 def modify_batters(batters,old_hits,players,ids):
     import pandas as pd
@@ -176,7 +142,7 @@ def modify_batters(batters,old_hits,players,ids):
         player = round(player,2)
         weighted = weighted.append(player)
     weighted = weighted.reset_index(drop=True)
-    whole_stats = weighted.drop(columns=['hr','year'])
+    whole_stats = weighted.drop(columns=['hr'])
     whole_stats['pred_hr'] = result.predict(whole_stats.iloc[:,2:12]).round(2)
     
 
