@@ -38,7 +38,7 @@ from numpy import nan
 pitchers = pd.read_csv('all_pitchers.csv')
 pitchers = pitchers.rename(columns={'last_name, first_name':'name'})
 pitchers = pitchers.drop_duplicates(subset=['player_id','name']).reset_index(drop=True)
-for i in range(0,len(pitchers)):
+for i in range(656,len(pitchers)):
     stats = bb.statcast_pitcher("2025-03-01","2025-11-01",pitchers.player_id[i])
     stats = stats.query('game_type == "R"').dropna(subset='pitch_type')
     stats = stats[~stats['pitch_type'].isin(['SC','PO','CS','FA','EP',nan,'AB','FC','IN'])]
@@ -185,6 +185,7 @@ import tempfile
 import os
 import pandas as pd
 from io import StringIO
+from unidecode import unidecode
 
 r_code = """
 library(baseballr)
@@ -199,9 +200,11 @@ with tempfile.NamedTemporaryFile(mode='w', suffix='.R', delete=False) as f:
     temp_script = f.name
 
 result = subprocess.run([r'C:\Program Files\R\R-4.2.1\bin\Rscript.exe', temp_script], 
-                       capture_output=True, text=True, check=True)
+                       capture_output=True, text=True, check=True, encoding='utf-8')
 os.unlink(temp_script)
+
 players = pd.read_csv(StringIO(result.stdout))
+players = players.applymap(lambda x: unidecode(str(x)) if pd.notna(x) else x)
 del f,r_code,result,temp_script
 #%% loading datasets
 
@@ -235,7 +238,7 @@ pitch_stats = modify_pitchers(pitchers, old_pitch,players,ids)
 
 del batters, old_hits, old_pitch, pitchers
 
-#%% bullpens
+#% bullpens
 
 """
 the biggest reason we pulled rosters was for this. I haven't gotten far enough
@@ -266,7 +269,7 @@ bullpen_stats = bullpen_stats.round(3)
 
 del teams, scope, pbp, total_count, pitch_list, pitch, team
 
-#%% get lineup data via rotowire
+#% get lineup data via rotowire
 
 """
 self-explanatory - we go to rotowire and pull their projected lineups for the day
@@ -364,7 +367,7 @@ lineups['pitcher'] = lineups['pitcher'].apply(unidecode).str.replace(' Jr.', '',
 driver.close()
 del g,p,pi,a_team,h_team,driver,driver_path,opts,url,x,status,pitcher,last_name,initial,name_check,player,order
 
-#%% ratings for matchups
+#% ratings for matchups
 
 
 
@@ -620,9 +623,9 @@ and actual odds must be at least 200. There is no real math behind this selectio
 I just didn't want their to be too many selections each day.
 """
 
-good = lineups.query('pred_hr >= 18.0')
+good = lineups.query('pred_hr >= 15.0')
 good = good.sort_values(by='diff',ascending = False).reset_index(drop=True)
-good['pick'] = good.apply(lambda row: 1 if row['diff'] >= 200 else 0, axis = 1)
+good['pick'] = good.apply(lambda row: 1 if row['diff']*row['pred_hr'] >= 3600 else 0, axis = 1)
 good = good[['team','player','pick']]
 lineups = lineups.merge(good,on=['player','team'],how='left')
 lineups['pick'] = lineups['pick'].fillna(0)
@@ -655,14 +658,17 @@ archive = pd.read_csv('pick_archive.csv')
 archive = archive.append(lineups)
 archive.to_csv('pick_archive.csv',index=False)
 
-"""
+
 archive = pd.read_csv('ratings_archive.csv')
 archive = archive.append(lineups)
 archive.to_csv('ratings_archive.csv',index=False)
 #%% pred ratings
 import matplotlib.pyplot as plt
+from statistics import mean
 bins = list(range(0, 27)) + [float('inf')]
 labels = [f'{i}-{i+1}' for i in range(0, 26)] + ['26+']
+archive['pred_hr'] = round(round((sum(archive.HR)/len(archive)),3)*(archive.rating/mean(archive.rating)),3)*100
+archive['pred_odds'] = round(((100/(archive.pred_hr))*100)-100)
 archive['bin'] = pd.cut(archive['pred_hr'], bins=bins, labels=labels, right=False, include_lowest=True)
 
 hr_by_bin = archive.groupby('bin')['HR'].mean().rolling(3, min_periods=1).mean()

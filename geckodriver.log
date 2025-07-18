@@ -1,0 +1,80 @@
+1752852758049	geckodriver	INFO	Listening on 127.0.0.1:63546
+1752852761117	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=950" "--height=1025" "--remote-deb ... 7" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofilezCsqEb"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1752852762251	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1752852762427	Marionette	INFO	Listening on port 63562
+Read port: 63562
+WebDriver BiDi listening on ws://127.0.0.1:63547
+1752852762509	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1752852767290	Marionette	WARN	Ignoring event 'DOMContentLoaded' because document has an invalid readyState of 'complete'.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+JavaScript warning: https://player.aniview.com/ssync/62f53b2c7850d0786f227f64/ssync.html?gdpr=0&gdpr_consent=&pid=62f53b2c7850d0786f227f64&r=https%3A%2F%2Fvisitor.us-east4.gcp.omnitagjs.com%2Fvisitor%2Fsync%3Fgdpr%3D0%26gdpr_consent%3D%26name%3DANIVIEW%26ttl%3D720%26uid%3De8ecb87ff2ef3a3b16ba16c51e7986ac%26visitor%3D%255BAV_UID%255D, line 82: unreachable code after return statement
+JavaScript warning: https://player.aniview.com/ssync/62f53b2c7850d0786f227f64/ssync.html?gdpr=0&gdpr_consent=&pid=62f53b2c7850d0786f227f64&r=https%3A%2F%2Fvisitor.us-east4.gcp.omnitagjs.com%2Fvisitor%2Fsync%3Fgdpr%3D0%26gdpr_consent%3D%26name%3DANIVIEW%26ttl%3D720%26uid%3De8ecb87ff2ef3a3b16ba16c51e7986ac%26visitor%3D%255BAV_UID%255D, line 82: unreachable code after return statement
+1752852775000	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1752852775124	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1752852775582	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1752852775589	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1752852784524	Marionette	INFO	Stopped listening on port 63562
+Dynamically enable window occlusion 1
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+1752857026971	geckodriver	INFO	Listening on 127.0.0.1:61786
+1752857030034	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=950" "--height=1025" "--remote-deb ... 7" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofiledhnLk7"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1752857031541	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1752857031724	Marionette	INFO	Listening on port 61794
+WebDriver BiDi listening on ws://127.0.0.1:61787
+Read port: 61794
+1752857031853	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1752857035720	Marionette	WARN	Ignoring event 'DOMContentLoaded' because document has an invalid readyState of 'complete'.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1752857043664	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1752857043915	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript warning: https://player.aniview.com/ssync/62f53b2c7850d0786f227f64/ssync.html?gdpr=0&gdpr_consent=&pid=62f53b2c7850d0786f227f64&r=https%3A%2F%2Fvisitor.us-east4.gcp.omnitagjs.com%2Fvisitor%2Fsync%3Fgdpr%3D0%26gdpr_consent%3D%26name%3DANIVIEW%26ttl%3D720%26uid%3De8ecb87ff2ef3a3b16ba16c51e7986ac%26visitor%3D%255BAV_UID%255D, line 82: unreachable code after return statement
+JavaScript warning: https://player.aniview.com/ssync/62f53b2c7850d0786f227f64/ssync.html?gdpr=0&gdpr_consent=&pid=62f53b2c7850d0786f227f64&r=https%3A%2F%2Fvisitor.us-east4.gcp.omnitagjs.com%2Fvisitor%2Fsync%3Fgdpr%3D0%26gdpr_consent%3D%26name%3DANIVIEW%26ttl%3D720%26uid%3De8ecb87ff2ef3a3b16ba16c51e7986ac%26visitor%3D%255BAV_UID%255D, line 82: unreachable code after return statement
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1752857046277	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1752857046282	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1752857055808	Marionette	INFO	Stopped listening on port 61794
+Dynamically enable window occlusion 1
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+1752857475255	geckodriver	INFO	Listening on 127.0.0.1:57923
+1752857478294	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=1350" "--height=1025" "--remote-de ... 4" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofile3ma44c"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1752857479401	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1752857479553	Marionette	INFO	Listening on port 57932
+WebDriver BiDi listening on ws://127.0.0.1:57924
+Read port: 57932
+1752857479681	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1752857596145	Marionette	INFO	Stopped listening on port 57932
+Dynamically enable window occlusion 1
+JavaScript warning: https://crazyninjaodds.com/ScriptResource.axd?d=NJmAwtEo3Ipnlaxl6CMhvpAd71mSnzuAUze8MAwh0NS-JoaA3QRk-C0pQ5NAOrkmRDutu_yU9PDJqiNkR6AjQUuIeQbcZBIIwKmKAVZqrELN9uDlxcylIa41MzdQ-24ZDTxEt0Hylljm1t_xxTtqcTRw3DZnAR6kgknLKTVYhNM1&t=2a9d95e3, line 5: Script terminated by timeout at:
+Function.createDelegate/<@https://crazyninjaodds.com/ScriptResource.axd?d=NJmAwtEo3Ipnlaxl6CMhvpAd71mSnzuAUze8MAwh0NS-JoaA3QRk-C0pQ5NAOrkmRDutu_yU9PDJqiNkR6AjQUuIeQbcZBIIwKmKAVZqrELN9uDlxcylIa41MzdQ-24ZDTxEt0Hylljm1t_xxTtqcTRw3DZnAR6kgknLKTVYhNM1&t=2a9d95e3:5:295
+
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback

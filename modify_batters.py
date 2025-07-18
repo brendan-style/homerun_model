@@ -374,10 +374,12 @@ def modify_batters(batters,old_hits,players,ids):
         plat_diff['pred_diff'] = result.predict(plat_diff).round(2)
         names['plat_disc'][i] = plat_diff['pred_diff'][0]
     per_pitch_short = per_pitch_short.merge(names,on=['player_name','playerid'])
-    
+
+    players['team_id'] = players['team_id'].astype(int)
     players = players.merge(ids, on='team_id', how='left')
     players = players[['person_id','Stadium','person_full_name']]
     players = players.rename(columns={'person_id':'playerid','person_full_name':'player_name'})
+    players['playerid'] = players['playerid'].astype(int)
     per_pitch_short = per_pitch_short.merge(players,how='inner',on=['playerid','player_name'])
     per_pitch_short = per_pitch_short.drop_duplicates()
     
