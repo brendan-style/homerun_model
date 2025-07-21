@@ -78,3 +78,211 @@ Function.createDelegate/<@https://crazyninjaodds.com/ScriptResource.axd?d=NJmAwt
 console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
 console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
 JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+1752933075822	geckodriver	INFO	Listening on 127.0.0.1:59114
+1752933078896	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=950" "--height=1025" "--remote-deb ... 5" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofileYqEu5R"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1752933080207	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1752933080390	Marionette	INFO	Listening on port 59124
+WebDriver BiDi listening on ws://127.0.0.1:59115
+Read port: 59124
+1752933080520	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1752933084559	Marionette	WARN	Ignoring event 'DOMContentLoaded' because document has an invalid readyState of 'complete'.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1752933092432	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript warning: https://player.aniview.com/ssync/62f53b2c7850d0786f227f64/ssync.html?gdpr=0&gdpr_consent=&pid=62f53b2c7850d0786f227f64&r=https%3A%2F%2Fvisitor.us-east4.gcp.omnitagjs.com%2Fvisitor%2Fsync%3Fgdpr%3D0%26gdpr_consent%3D%26name%3DANIVIEW%26ttl%3D720%26uid%3De8ecb87ff2ef3a3b16ba16c51e7986ac%26visitor%3D%255BAV_UID%255D, line 82: unreachable code after return statement
+JavaScript warning: https://player.aniview.com/ssync/62f53b2c7850d0786f227f64/ssync.html?gdpr=0&gdpr_consent=&pid=62f53b2c7850d0786f227f64&r=https%3A%2F%2Fvisitor.us-east4.gcp.omnitagjs.com%2Fvisitor%2Fsync%3Fgdpr%3D0%26gdpr_consent%3D%26name%3DANIVIEW%26ttl%3D720%26uid%3De8ecb87ff2ef3a3b16ba16c51e7986ac%26visitor%3D%255BAV_UID%255D, line 82: unreachable code after return statement
+1752933093341	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+JavaScript error: resource://devtools/client/jsonview/Sniffer.sys.mjs, line 53: NS_ERROR_NOT_AVAILABLE: Component returned failure code: 0x80040111 (NS_ERROR_NOT_AVAILABLE) [nsIChannel.contentType]
+JavaScript error: resource://devtools/client/jsonview/Sniffer.sys.mjs, line 53: NS_ERROR_NOT_AVAILABLE: Component returned failure code: 0x80040111 (NS_ERROR_NOT_AVAILABLE) [nsIChannel.contentType]
+1752933096836	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1752933096841	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1752933103659	Marionette	INFO	Stopped listening on port 59124
+Dynamically enable window occlusion 1
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+1752935557954	geckodriver	INFO	Listening on 127.0.0.1:51249
+1752935561034	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=1350" "--height=1025" "--remote-de ... 0" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofileYTYZ2I"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1752935562332	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1752935562508	Marionette	INFO	Listening on port 51259
+WebDriver BiDi listening on ws://127.0.0.1:51250
+Read port: 51259
+1752935562660	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1752935678726	Marionette	INFO	Stopped listening on port 51259
+Dynamically enable window occlusion 1
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+1753020830531	geckodriver	INFO	Listening on 127.0.0.1:52698
+1753020833623	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=950" "--height=1025" "--remote-deb ... 9" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofileEgMNnB"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1753020834926	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1753020835050	Marionette	INFO	Listening on port 52707
+WebDriver BiDi listening on ws://127.0.0.1:52699
+Read port: 52707
+1753020835235	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1753020839141	Marionette	WARN	Ignoring event 'DOMContentLoaded' because document has an invalid readyState of 'complete'.
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval line 4897 > eval, line 1: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval line 4897 > eval line 1 > eval, line 1: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval, line 4897: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval line 4897 > eval line 1 > eval, line 1: unreachable code after return statement
+JavaScript warning: https://pagead2.googlesyndication.com/bg/GXqJlvPKmIbiLe5DehF1k8-uRnpgZ0ra2eEHfebNYQk.js line 2 > eval line 4897 > eval line 1 > eval line 1 > eval, line 1: unreachable code after return statement
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1753020846133	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript warning: https://player.aniview.com/ssync/62f53b2c7850d0786f227f64/ssync.html?gdpr=0&gdpr_consent=&pid=62f53b2c7850d0786f227f64&r=https%3A%2F%2Fvisitor.us-east4.gcp.omnitagjs.com%2Fvisitor%2Fsync%3Fgdpr%3D0%26gdpr_consent%3D%26name%3DANIVIEW%26ttl%3D720%26uid%3De8ecb87ff2ef3a3b16ba16c51e7986ac%26visitor%3D%255BAV_UID%255D, line 82: unreachable code after return statement
+1753020848187	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript warning: https://player.aniview.com/ssync/62f53b2c7850d0786f227f64/ssync.html?gdpr=0&gdpr_consent=&pid=62f53b2c7850d0786f227f64&r=https%3A%2F%2Fvisitor.us-east4.gcp.omnitagjs.com%2Fvisitor%2Fsync%3Fgdpr%3D0%26gdpr_consent%3D%26name%3DANIVIEW%26ttl%3D720%26uid%3De8ecb87ff2ef3a3b16ba16c51e7986ac%26visitor%3D%255BAV_UID%255D, line 82: unreachable code after return statement
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1753020849128	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753020849135	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753020858974	Marionette	INFO	Stopped listening on port 52707
+Dynamically enable window occlusion 1
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: , line 0: TypeError: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+[GFX1-]: VideoBridgeParent receives IPC close with reason=AbnormalShutdown
+1753021434718	geckodriver	INFO	Listening on 127.0.0.1:59999
+1753021437775	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=1350" "--height=1025" "--remote-de ... 0" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofile8KYkUd"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1753021438947	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1753021439107	Marionette	INFO	Listening on port 60009
+WebDriver BiDi listening on ws://127.0.0.1:60000
+Read port: 60009
+1753021439267	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1753021737339	Marionette	INFO	Stopped listening on port 60009
+Dynamically enable window occlusion 1
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1753021481229	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1753021481379	Marionette	INFO	Listening on port 60049
+WebDriver BiDi listening on ws://127.0.0.1:60040
+Read port: 60049
+1753021481537	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1753021602024	Marionette	INFO	Stopped listening on port 60049
+Dynamically enable window occlusion 1
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+1753131418533	geckodriver	INFO	Listening on 127.0.0.1:52523
+1753131421634	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=950" "--height=1025" "--remote-deb ... 4" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofilerpV7yF"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1753131422940	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1753131423120	Marionette	INFO	Listening on port 52534
+WebDriver BiDi listening on ws://127.0.0.1:52524
+Read port: 52534
+1753131423307	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+JavaScript error: https://bet.rotowire.com/js/app.js, line 1: ReferenceError: ktag is not defined
+1753131435577	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436049	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436140	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436215	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1753131436457	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436461	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436511	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436680	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436689	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436707	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436741	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436767	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131436867	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437069	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437207	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437258	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437273	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437312	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437312	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437340	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437356	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437364	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437368	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131437425	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131438040	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+JavaScript error: https://a.amxrtb.com/js/cframe.js#gdpr=0&gdpr_consent=&cc=US, line 1: SecurityError: The operation is insecure.
+1753131439045	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+1753131447231	Marionette	INFO	Stopped listening on port 52534
+Dynamically enable window occlusion 1
+JavaScript warning: , line 0: Script terminated by timeout at:
+
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
+1753132852171	geckodriver	INFO	Listening on 127.0.0.1:53591
+1753132855191	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=1350" "--height=1025" "--remote-de ... 2" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofile4IqYfv"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1753132856314	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1753132856471	Marionette	INFO	Listening on port 53602
+WebDriver BiDi listening on ws://127.0.0.1:53592
+Read port: 53602
+1753132856601	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1753132859756	Marionette	WARN	Ignoring event 'pageshow' because document has an invalid readyState of 'uninitialized'.
+Exiting due to channel error.
+Listening on 127.0.0.1:53702
+1753132994092	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--width=1350" "--height=1025" "--remote-de ... 3" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\brend\\AppData\\Local\\Temp\\rust_mozprofileP85Q0u"
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+Dynamically enable window occlusion 0
+1753132995179	Marionette	INFO	Marionette enabled
+console.error: "Warning: unrecognized command line flag" "-width"
+console.error: "Warning: unrecognized command line flag" "-height"
+1753132995342	Marionette	INFO	Listening on port 53712
+WebDriver BiDi listening on ws://127.0.0.1:53703
+Read port: 53712
+1753132995478	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+1753133116039	Marionette	INFO	Stopped listening on port 53712
+Dynamically enable window occlusion 1
+console.error: "Failed to fetch https://ads.mozilla.org/v1/delete_user:" "NetworkError when attempting to fetch resource."
+console.warn: TopSitesFeed: Failed to fetch data from MARS server: NetworkError when attempting to fetch resource.
+JavaScript error: resource://services-settings/RemoteSettingsClient.sys.mjs, line 101: Error: Unknown callback
