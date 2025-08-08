@@ -24,7 +24,8 @@ for i in range(len(all_ratings)):
 all_ratings['sb_hr'] = round(1/((all_ratings.sb_odds+100)/100),3)*100
 all_ratings['sb_under_odds'] = round(100*(-1*((100-all_ratings.sb_hr)/100)/((all_ratings.sb_hr)/100)))
 all_ratings['sb_under_pred'] = ((100-all_ratings.sb_hr))
-
+all_ratings['under_pred'] = ((100-all_ratings.pred_hr))
+all_ratings['under_diff']
         
 import matplotlib.pyplot as plt
 from statistics import mean
@@ -157,12 +158,12 @@ width = 0.25
 
 # Plot three bars with your specified colors
 bars1 = ax.bar([i - width for i in x], actual_hr_rates, width, label='Actual HR Rate %', color='green', alpha=0.8)
-bars2 = ax.bar([i for i in x], your_hr_percentages, width, label='Your Predicted HR %', color='blue', alpha=0.8)
+bars2 = ax.bar([i for i in x], your_hr_percentages, width, label='Model Predicted HR %', color='blue', alpha=0.8)
 bars3 = ax.bar([i + width for i in x], sb_hr_percentages, width, label='Sportsbook Predicted HR %', color='red', alpha=0.8)
 
-ax.set_xlabel('Your Predicted Odds Range')
+ax.set_xlabel('Odds Range')
 ax.set_ylabel('Home Run Percentage')
-ax.set_title('MLB Home Run Model Calibration: Actual vs Predicted HR Rates by Odds Ranges')
+ax.set_title('Actual vs Predicted HR Rates by Odds Ranges')
 ax.set_xticks(x)
 ax.set_xticklabels(range_labels, rotation=45, ha='right')
 ax.legend()
@@ -253,6 +254,66 @@ all_ratings['value'] =  all_ratings.pred_hr - all_ratings.sb_hr
 results = backtest_thresholds(all_ratings)
 results['win_rate'] = round(results.wins/(results.wins+results.losses),3)*100
 results['product'] = results.diff_threshold * results.pred_hr_threshold
+all_ratings['pick'] = 0
+for i in range(len(all_ratings)):
+    if all_ratings.sb_under_pred[i] >= 88.0 and all_ratings['diff'][i] <= -150:
+        all_ratings.pick[i] = 1
+    else:
+        continue
+all_ratings['profit'] = 0
+for i in range(len(all_ratings)):
+    if all_ratings.pick[i] == 1:
+        if all_ratings.HR[i] == 0:
+            all_ratings.profit[i] = round(10/(abs((all_ratings.sb_under_odds[i]/100))),2)
+        else:
+            all_ratings.profit[i] = -10
+    else:
+        continue
+    #%% roi plot
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+# Assuming your dataframe is called 'df'
+# First, ensure date column is datetime
+all_ratings['date'] = pd.to_datetime(all_ratings['date'])
+
+# Sort by date to ensure proper time series
+df_sorted = all_ratings.sort_values('date').copy()
+
+# Calculate cumulative profit over time
+df_sorted['cumulative_profit'] = df_sorted['profit'].cumsum()
+
+# Create the plot
+plt.figure(figsize=(12, 6))
+
+# For smoothing, we can use a rolling average or interpolation
+# Option 1: Simple rolling average (uncomment if desired)
+# window_size = 3
+# df_sorted['smoothed_profit'] = df_sorted['cumulative_profit'].rolling(window=window_size, center=True).mean()
+# plt.plot(df_sorted['date'], df_sorted['smoothed_profit'], linewidth=2, color='steelblue')
+
+# Option 2: Basic line without markers (cleaner look)
+plt.plot(df_sorted['date'], df_sorted['cumulative_profit'], 
+         linewidth=2.5, color='steelblue')
+
+plt.title('Cumulative Profit Over Time', fontsize=16, fontweight='bold')
+plt.xlabel('Date', fontsize=12)
+plt.ylabel('Cumulative Profit ($)', fontsize=12)
+plt.grid(True, alpha=0.3)
+
+# Format x-axis dates
+plt.xticks(rotation=45)
+plt.tight_layout()
+
+# Add horizontal line at break-even (y=0)
+#plt.axhline(y=0, color='red', linestyle='--', alpha=0.7, label='Break-even')
+
+# Add ROI text annotation
+plt.text(0.20, 0.87, 'ROI: 9.67%', transform=plt.gca().transAxes, 
+         fontsize=14, fontweight='bold', verticalalignment='top',
+         bbox=dict(boxstyle='square', facecolor='lightblue', alpha=0.8))
+all_ratings.to_csv('all_ratings.csv')
 #%%
 def backtest_diff_thresholds(df, diff_thresholds=None, bet_amount=10):
     """
@@ -366,9 +427,7 @@ def backtest_diff_thresholds(df, diff_thresholds=None, bet_amount=10):
     return results_df
 
 #%%
-6+12+4+4+4+4+2
-1+1+1+1+1+2+1
-8/36
+
 import pandas as pd
 import numpy as np
 from itertools import product
@@ -514,3 +573,130 @@ def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_a
 # To create a pivot table for visualization:
 # roi_heatmap = results.pivot(index='pred_hr_threshold', columns='diff_threshold', values='roi').fillna(0)
 # print(roi_heatmap)
+
+#%% products
+import pandas as pd
+import numpy as np
+from itertools import product
+
+def backtest_product_thresholds(df, product_thresholds=None, bet_amount=10):
+    """
+    Backtest different product threshold combinations for sports betting picks on UNDER bets.
+    Bets that players will NOT hit home runs.
+    
+    Uses product of diff * sb_under_pred as the threshold criterion.
+    
+    Parameters:
+    df: DataFrame with columns ['diff', 'sb_under_pred', 'HR', 'sb_under_odds']
+    product_thresholds: list of product thresholds to test
+    bet_amount: amount wagered per bet (default 10)
+    
+    Returns:
+    DataFrame with results for each product threshold
+    """
+    
+    # Default thresholds if not provided
+    if product_thresholds is None:
+        # Include 0 as litmus test, then negative values since we want product <= threshold
+        product_thresholds = [0, -5000, -7500, -10000, -12500, -13200, -15000, -17500, -20000, -25000, -30000]
+    
+    results = []
+    
+    # Test each product threshold
+    for product_thresh in product_thresholds:
+        
+        # Create a copy of the dataframe to work with
+        df_copy = df.copy()
+        
+        # Calculate the product for each row
+        df_copy['threshold_product'] = df_copy['diff'] * df_copy['sb_under_pred']
+        
+        # Assign picks based on product threshold (1 if meets criteria, 0 if not)
+        # We want product <= threshold (since diff is negative for value, product will be negative)
+        df_copy['pick'] = np.where(
+            df_copy['threshold_product'] <= product_thresh, 
+            1, 
+            0
+        )
+        
+        # Calculate profit for each row based on picks
+        df_copy['calculated_profit'] = 0.0
+        
+        for idx in df_copy.index:
+            if df_copy.loc[idx, 'pick'] == 1:
+                # Get the under odds - use sb_under_odds, fallback to calculated from sb_odds
+                if 'sb_under_odds' in df_copy.columns and pd.notna(df_copy.loc[idx, 'sb_under_odds']):
+                    odds = df_copy.loc[idx, 'sb_under_odds']
+                elif 'sb_odds' in df_copy.columns and pd.notna(df_copy.loc[idx, 'sb_odds']):
+                    odds = df_copy.loc[idx, 'sb_odds']  # Assuming this is actually the under odds
+                else:
+                    # Skip this pick if no odds available
+                    continue
+                
+                if df_copy.loc[idx, 'HR'] == 0:
+                    # WIN: Player did NOT hit a home run
+                    if odds > 0:
+                        profit = (odds / 100) * bet_amount
+                    else:
+                        profit = (100 / abs(odds)) * bet_amount
+                    df_copy.loc[idx, 'calculated_profit'] = profit
+                else:
+                    # LOSS: Player hit a home run
+                    df_copy.loc[idx, 'calculated_profit'] = -bet_amount
+            else:
+                # No pick: no profit or loss
+                df_copy.loc[idx, 'calculated_profit'] = 0.0
+        
+        # Filter to only the picks made
+        picks_made = df_copy[df_copy['pick'] == 1].copy()
+        
+        if len(picks_made) == 0:
+            # No qualifying picks
+            results.append({
+                'product_threshold': product_thresh,
+                'num_picks': 0,
+                'wins': 0,
+                'losses': 0,
+                'win_rate': 0,
+                'total_profit': 0,
+                'total_wagered': 0,
+                'roi': 0,
+                'avg_profit_per_pick': 0,
+                'profit_per_day': 0
+            })
+            continue
+        
+        # Calculate metrics
+        num_picks = len(picks_made)
+        wins = (picks_made['HR'] == 0).sum()  # WIN when HR == 0 for under bets
+        losses = num_picks - wins
+        win_rate = (wins / num_picks) * 100 if num_picks > 0 else 0
+        
+        # Calculate profit using our calculated profits
+        total_profit = picks_made['calculated_profit'].sum()
+        total_wagered = num_picks * bet_amount
+        roi = (total_profit / total_wagered) * 100 if total_wagered > 0 else 0
+        avg_profit_per_pick = total_profit / num_picks if num_picks > 0 else 0
+        
+        # Calculate profit per day
+        unique_dates = picks_made['date'].nunique() if 'date' in picks_made.columns else 1
+        profit_per_day = total_profit / unique_dates if unique_dates > 0 else 0
+        
+        results.append({
+            'product_threshold': product_thresh,
+            'num_picks': num_picks,
+            'wins': wins,
+            'losses': losses,
+            'win_rate': round(win_rate, 2),
+            'total_profit': round(total_profit, 2),
+            'total_wagered': total_wagered,
+            'roi': round(roi, 2),
+            'avg_profit_per_pick': round(avg_profit_per_pick, 2),
+            'profit_per_day': round(profit_per_day, 2)
+        })
+    
+    # Convert to DataFrame and sort by ROI descending
+    results_df = pd.DataFrame(results)
+    results_df = results_df.sort_values('roi', ascending=False).reset_index(drop=True)
+    
+    return results_df

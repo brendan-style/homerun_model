@@ -255,7 +255,7 @@ def modify_batters(batters,old_hits,players,ids):
         weighted = weighted.append(player)
     weighted = weighted.drop_duplicates().reset_index(drop=True)
     weighted = weighted.drop(columns=['game_year','hr'])
-    weighted['pred_hr'] = result.predict(weighted.iloc[:,2:14]).round(2)
+    weighted['pred_hr'] = result.predict(weighted[old_hits.iloc[:,3:16].drop(columns='hr').columns]).round(2)
     
     
     
@@ -298,10 +298,10 @@ def modify_batters(batters,old_hits,players,ids):
                 for col in pitch.columns[20:]:
                     pitch[col] = pitch_2024[col].sum() + pitch_2025[col].sum() if len(pitch_2024) > 0 and len(pitch_2025) > 0 else pitch[col]
         else:
-            continue
+            pass
         per_pitch_short = per_pitch_short.append(pitch)
     per_pitch_short = per_pitch_short.reset_index(drop=True)
-    per_pitch_short['pred_hr'] = result.predict(per_pitch_short.iloc[:,:12]).round(2)
+    per_pitch_short['pred_hr'] = result.predict(per_pitch_short[old_hits.iloc[:,3:16].drop(columns='hr').columns]).round(2)
     per_pitch_short = per_pitch_short.drop(columns='game_year')
     
     

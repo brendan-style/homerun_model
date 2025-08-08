@@ -12,44 +12,44 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
     import numpy as np
     from statistics import mean
     from math import floor, ceil
-    fbb = pitchers.query('bip==1')
+    
+    fbb = pitchers.query('in_play==1')
     fbb = fbb.dropna(subset=['estimated_woba_using_speedangle'])
     
     # getting average bf and outs gotten for every starter
     
-    outings = pitchers.groupby(['player_name','pitcher','batter','game_date','inning','outs_when_up','events']).agg(
+    outings = pitchers.groupby(['player_name','playerid','batter','game_date','inning','outs_when_up','events']).agg(
         pitches=('batter','size'))
     outings = outings.reset_index()
     outings['outs'] = ((outings['inning']*3)-3) + outings['outs_when_up']
-    outings = outings.groupby(['player_name','pitcher','game_date']).agg(
+    outings = outings.groupby(['player_name','playerid','game_date']).agg(
         bf=('game_date', 'size'),
         last_out=('outs','max'),
         first_out=('outs','min'))
     outings = outings.reset_index()
     outings['outs'] = outings.last_out - outings.first_out
     outings = outings.drop(columns=['first_out','last_out'])
-    pitch_counts = pitchers.groupby(['pitcher', 'game_date']).size().reset_index(name='pitch_count')
-    outings = outings.merge(pitch_counts, on=['pitcher', 'game_date'], how='left')
+    pitch_counts = pitchers.groupby(['playerid', 'game_date']).agg(pitch_count=('pitch_type','size'))
+    outings = outings.merge(pitch_counts, on=['playerid', 'game_date'], how='left')
     
-    last_events = pitchers.groupby(['pitcher', 'game_date'])['events'].last().reset_index(name='last_event')
-    outings = outings.merge(last_events, on=['pitcher', 'game_date'], how='left')
+    last_events = pitchers.groupby(['playerid', 'game_date'])['events'].last().reset_index(name='last_event')
+    outings = outings.merge(last_events, on=['playerid', 'game_date'], how='left')
     
     outings['outs'] += outings['last_event'].str.contains('triple_play', na=False).astype(int) * 3
     outings['outs'] += outings['last_event'].str.contains('double_play', na=False).astype(int) * 2
     outings['outs'] += (outings['last_event'].str.contains('out', na=False) | outings['last_event'].str.contains('sac', na=False)).astype(int) * 1
     outings = outings.drop(columns=['last_event'])
     
-    outings = outings.groupby(['player_name','pitcher']).agg(
+    outings = outings.groupby(['player_name','playerid']).agg(
         avg_bf=('bf','mean'),
         std_bf=('bf','std'),
         avg_outs=('outs','mean'),
         atd_outs=('outs','std'),
         avg_pc=('pitch_count','mean'),
         std_pc=('pitch_count','std'),
-        apps=('pitcher','size')).reset_index()
+        apps=('playerid','size')).reset_index()
     outings = outings.round(1)
     outings["player_name"] = [" ".join(n.split(", ")[::-1]) for n in outings["player_name"]]
-    outings = outings.rename(columns={'pitcher':'playerid'})
     
     
     grouped = pitchers.groupby(['player_name','playerid', 'year', 'pitch_type']).agg(
@@ -135,7 +135,7 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
         elif col in ['la']:
             league_sums[col][1] = round(mean(fbb.launch_angle),3)
         elif col in ['bip']:
-            league_sums[col][1] = round(sum(pitchers.in_play)/len(batters),3)
+            league_sums[col][1] = round(sum(pitchers.in_play)/len(pitchers),3)
         else:
             if col == 'barrels':
                 o_col = 'barrel'
@@ -199,6 +199,7 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
             else:
                 continue
 
+    grouped = grouped.drop(grouped.query('fly_ball == 0').index).reset_index(drop=True)
     grouped['gb/fb'] = (grouped['ground_ball']/grouped['fly_ball'])
     
     rates = grouped[['player_name','playerid','year','pitch_type','xwobacon',
@@ -263,8 +264,20 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
     new_stats["player_name"] = [" ".join(n.split(", ")[::-1]) for n in new_stats["player_name"]]
     new_stats["player_name"] =new_stats["player_name"].apply(unidecode)
     
+    from sklearn.model_selection import train_test_split
+    from sklearn.linear_model import LassoCV
+    from sklearn.metrics import mean_squared_error as mse
+    from scipy.stats import pearsonr
+    import numpy as np
+    old_pitch = pd.read_csv('old_pitch.csv')
+    X = old_pitch.iloc[:,3:20].drop(columns='hr')
+    y = old_pitch.hr
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=12)
+    result = LassoCV(alphas=np.logspace(-3, 1, 20),cv=5, random_state=14, max_iter=10000)
+    result = result.fit(X_train, y_train)
     
-    # EDIT ILOCS
+    
+    
     
     names = new_stats[['player_name','playerid']]
     names = names.drop_duplicates(subset=['player_name','playerid'], keep='first').reset_index(drop=True)
@@ -279,22 +292,21 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
         player = player.groupby(['player_name','year','playerid']).agg({
             **{col: 'sum' for col in list(player.columns[:17])},
             **{col: 'sum' for col in list(player.columns[21:])}}).reset_index()
+        if len(player['year'].unique()) == 2:
+            player = player.groupby(['player_name','playerid']).agg({
+                **{col: 'mean' for col in list(player.columns[3:20])},
+                **{col: 'sum' for col in player.columns[20:]}}).reset_index()
+        elif sum(player.bip) < 200 and sum(player.year) == 2025:
+            p_weight = round(sum(player.bip)/200,2)
+            player.iloc[:,3:20] = (player.iloc[:,3:20]*(0.4 + (0.35*p_weight)) + (1*(1-(0.4 + (0.35*p_weight)))))
+        else:
+            player.iloc[:,3:20] = (player.iloc[:,3:20]*0.75) + 0.25
         player = round(player,2)
         weighted = weighted.append(player)
-    weighted = weighted.reset_index(drop=True) #had to drop severe outlier. gb/fb was 31.6 while next highest was 6.3
+    weighted = weighted.drop_duplicates().reset_index(drop=True)
+    weighted = weighted.drop(columns=['year','hr'])
+    weighted['pred_hr'] = result.predict(weighted[old_pitch.iloc[:,3:20].drop(columns='hr').columns]).round(2)
     
-    # Using all years with no swing metrics
-    from sklearn.model_selection import train_test_split
-    from sklearn.linear_model import LassoCV
-    from sklearn.metrics import mean_squared_error as mse
-    from scipy.stats import pearsonr
-    import numpy as np
-    old_pitch = pd.read_csv('old_pitch.csv')
-    X = old_pitch.iloc[:,3:20].drop(columns='hr')
-    y = old_pitch.hr
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=12)
-    result = LassoCV(alphas=np.logspace(-3, 1, 20),cv=5, random_state=14, max_iter=10000)
-    result = result.fit(X_train, y_train)
     #
     per_pitch_short = pd.DataFrame()
     options = new_stats[['player_name','playerid','pitch_type','year','bip']]
@@ -305,7 +317,7 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
         name = options['playerid'][i]
         pitch_type = options['pitch_type'][i]
         pitch = new_stats.query('playerid == @name and pitch_type == @pitch_type').reset_index(drop=True)
-        player = weighted.query('playerid == @name').reset_index(drop=True).drop(columns='hr')
+        player = weighted.query('playerid == @name').reset_index(drop=True)
         if len(pitch) > 1:
         # Get BBE values for both years before grouping
             bbe_2024 = max(30,pitch.query('year == 2024')['bip'].iloc[0] if len(pitch.query('year == 2024')) > 0 else 0)
@@ -333,23 +345,23 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
                 for col in pitch.columns[20:]:
                     pitch[col] = pitch_2024[col].sum() + pitch_2025[col].sum() if len(pitch_2024) > 0 and len(pitch_2025) > 0 else pitch[col]
         else:
-            continue
+            pass
         per_pitch_short = per_pitch_short.append(pitch)
     per_pitch_short = per_pitch_short.reset_index(drop=True)
     per_pitch_short['pred_hr'] = result.predict(per_pitch_short[old_pitch.iloc[:,3:20].drop(columns='hr').columns]).round(2)
     per_pitch_short = per_pitch_short.drop(columns='year')
     
     players['team_id'] = players['team_id'].astype(int)
-    outings = outings.rename(columns={'pitcher':'playerid'})
     per_pitch_short = per_pitch_short.merge(outings,how='inner',on=['playerid','player_name'])
     players = players.merge(ids, on='team_id', how='left')
     players = players[['person_id','Stadium','person_full_name']]
     players = players.rename(columns={'person_id':'playerid','person_full_name':'player_name'})
     players['playerid'] = players['playerid'].astype(int)
+    players = players.drop_duplicates().reset_index(drop=True)
+
+    per_pitch_short['player_name'] = per_pitch_short['player_name'].apply(unidecode)
     per_pitch_short = per_pitch_short.merge(players,how='inner',on=['playerid','player_name'])
     per_pitch_short = per_pitch_short.drop_duplicates()
-    
-    per_pitch_short['player_name'] = per_pitch_short['player_name'].apply(unidecode)
     per_pitch_short = per_pitch_short.reset_index(drop=True)
     
     """since we cannot aggregate things like velo, movement, and spin rate,

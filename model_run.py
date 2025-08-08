@@ -28,7 +28,7 @@ for i in range(0,len(hitters)):
     stats = stats[~stats['pitch_type'].isin(['SC','PO','CS','FA','EP',nan,'AB','FC','IN'])]
     stats = stats[['game_year','player_name','pitch_type','release_speed','events','description','stand','p_throws',
              'bb_type','zone','launch_speed','spin_axis','launch_angle','release_spin_rate','estimated_woba_using_speedangle','hit_distance_sc',
-             'launch_speed_angle','attack_angle','attack_direction','swing_path_tilt','age_bat','age_pit','bat_speed','swing_length']]
+             'launch_speed_angle','attack_angle','attack_direction','swing_path_tilt','age_bat','age_pit','bat_speed','swing_length','hit_location']]
     stats['playerid'] = hitters.iloc[:,1][i]
     if i == 0:
         pitches_b = stats
@@ -37,26 +37,28 @@ for i in range(0,len(hitters)):
 pitches_b = pitches_b.reset_index().drop(columns='index').drop_duplicates()
 pitches_b.to_csv('batters.csv',index=False)
 del stats, i
-
+#%%
+import pybaseball as bb
+import pandas as pd
+from numpy import nan
 pitchers = pd.read_csv('all_pitchers.csv')
 pitchers = pitchers.rename(columns={'last_name, first_name':'name'})
 pitchers = pitchers.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
-
-            
-for i in range(0,len(hitters)):
-    stats = bb.statcast_pitcher("2015-03-01","2025-11-01",pitchers.iloc[:,1][i])
+for i in range(460,len(pitchers)):
+    stats = bb.statcast_pitcher("2024-03-01","2025-11-01",pitchers.iloc[:,1][i])
+    if stats.empty:
+        continue
     stats = stats.query('game_type == "R"').dropna(subset='pitch_type')
     stats = stats[~stats['pitch_type'].isin(['SC','PO','CS','FA','EP',nan,'AB','FC','IN'])]
     stats = stats[['game_year','game_date','player_name','pitch_type','release_speed','events','description','stand','p_throws','release_pos_z','release_pos_x','plate_x','plate_z',
              'bb_type','zone','launch_speed','spin_axis','launch_angle','release_spin_rate','release_extension','estimated_woba_using_speedangle','hit_distance_sc','n_priorpa_thisgame_player_at_bat',
-             'launch_speed_angle','attack_angle','attack_direction','swing_path_tilt','age_bat','age_pit','bat_speed','swing_length','at_bat_number','arm_angle','n_thruorder_pitcher']]
-    stats['playerid'] = hitters.iloc[:,1][i]
-    if i == 0:
-        pitches_b = stats
-    else:
-        pitches_b = pitches_b.append(stats)
-pitches_b = pitches_b.reset_index().drop(columns='index').drop_duplicates()
-pitches_b.to_csv('pitchers.csv',index=False)
+             'launch_speed_angle','attack_angle','attack_direction','swing_path_tilt','age_bat','age_pit','bat_speed','swing_length','at_bat_number','arm_angle','n_thruorder_pitcher','outs_when_up','inning','batter']]
+    stats['playerid'] = pitchers.iloc[:,1][i]
+    if i == 0: pitches = stats
+    else: pitches = pitches.append(stats)
+    
+pitches = pitches.reset_index().drop(columns='index').drop_duplicates()
+pitches.to_csv('24_pitchers.csv',index=False)
 del stats, i
 #%% altering datasets
 
@@ -73,6 +75,7 @@ import numpy as np
 from statistics import mean
 from math import floor, ceil
 pitchers = pd.read_csv('pitchers.csv')
+
 pitchers = pitchers.rename(columns={'game_year':'year'})
 # Removing bunts from the analysis, would screw up ev and la metrics
 
@@ -95,8 +98,8 @@ pitchers = pitchers.reset_index().drop(columns='index')
 conditions = [
 pitchers['launch_angle'].isna(),
 pitchers['launch_angle'] < 10,
-(pitchers['launch_angle'] >= 10) & (pitchers['launch_angle'] <= 25),
-(pitchers['launch_angle'] > 25)]
+(pitchers['launch_angle'] >= 10) & (pitchers['launch_angle'] < 25),
+(pitchers['launch_angle'] >= 25)]
 choices = ['nan','ground_ball','line_drive','fly_ball']
 pitchers['bb_type'] = select(conditions, choices) 
 pitchers['bb_type'].replace('nan',pitchers['launch_angle'][1], inplace = True)
@@ -115,14 +118,15 @@ pitchers['in_zone'] = (pitchers['zone'] < 10).astype(int)
 pitchers['chase'] = pitchers.apply(lambda row: 1 if row['swing'] == 1 and row['in_zone'] == 0 else 0, axis = 1)
 pitchers['plate_x'] = abs(pitchers.plate_x)
 
-pitchers.to_csv('2025_pitchers.csv')
+pitches_y = pitchers.query('year == 2024 and age_pit > 28')
+pitches_o = pitchers.query('year == 2024 and age_pit <= 28')
+pitches_t = pitchers.query('year == 2025')
+pitches_y.to_csv('2024_pitchers_pt_1.csv',index=False)
+pitches_o.to_csv('2024_pitchers_pt_2.csv',index=False)
+pitches_t.to_csv('2025_pitchers.csv',index=False)
 
 # batters
-from numpy import select, nan,inf
-import pandas as pd
-from unidecode import unidecode
-from statistics import mean
-batters = pd.read_csv('all_pitches_b.csv')
+batters = pd.read_csv('batters.csv')
 
 # Removing bunts from the analysis, would screw up ev and la metrics
 batters = batters[~(batters['description'].str.contains('bunt', case=False))]
@@ -160,7 +164,8 @@ batters['hh'] = (batters['launch_speed'] >= 95).astype(int)
 batters['in_zone'] = (batters['zone'] < 10).astype(int)
 batters['chase'] = batters.apply(lambda row: 1 if row['swing'] == 1 and row['in_zone'] == 0 else 0, axis = 1)
 
-batters.to_csv('batters.csv')
+batters.query('game_year == 2025').to_csv('2025_batters.csv')
+batters.query('game_year == 2024').to_csv('2024_batters.csv')
 
 del choices, conditions
 
@@ -216,26 +221,30 @@ batters_25 = pd.read_csv('2025_batters.csv')
 batters = pd.concat([batters_24,batters_25])
 del batters_24, batters_25
 batters['player_name'] = batters['player_name'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
-old_hits = pd.read_csv('final_rates_b.csv')
+old_hits = pd.read_csv('old_hits.csv')
 hit_stats = modify_batters(batters, old_hits,players,ids)
-pitchers_24 = pd.read_csv('2024_pitchers.csv')
-pitchers_25 = pd.read_csv('2025_pitchers.csv')
-pitchers = pd.concat([pitchers_24,pitchers_25])
-del pitchers_24, pitchers_25
+pitchers_241 = pd.read_csv('2024_pitchers_pt_1.csv')
+pitchers_242 = pd.read_csv('2024_pitchers_pt_2.csv')
+pitchers_25 = pd.read_csv('2025_pitchers.csv').drop_duplicates()
+pitchers = pd.concat([pitchers_241,pitchers_242,pitchers_25])
+del pitchers_241, pitchers_242, pitchers_25
 pitchers['player_name'] = pitchers['player_name'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
-old_pitch = pd.read_csv('final_rates_p.csv')
+old_pitch = pd.read_csv('old_pitch.csv')
+pitchers = pitchers.drop_duplicates()
 pitch_stats = modify_pitchers(pitchers, old_pitch,players,ids)
-
-
+pitch_stats = pitch_stats.rename(columns={'pitch_count':'count'})
+pitch_stats = pitch_stats.rename(columns={'pitch_type':'pitch'})
+hit_stats = hit_stats.rename(columns={'pitch_count':'count'})
+hit_stats = hit_stats.rename(columns={'pitch_type':'pitch'})
 del batters, old_hits, old_pitch, pitchers
 
-#% bullpens
+#%% bullpens
 
 """
 the biggest reason we pulled rosters was for this. I haven't gotten far enough
 to be able to acurately predict which relief pitcher will come into the game,
-so instead I am pulling every player on the team below a certain BF threshold,
-and aggregating their stats so as to get an aggregate bullpen performance
+so instead I am pulling every player on the team that has a low avg batters faced,
+and combining their stats so as to get an aggregate bullpen performance
 """
 
 teams = list(pitch_stats.Stadium.unique())
@@ -248,19 +257,19 @@ for team in teams:
         pbp = scope.query('pitch == @pitch')
         pbp = pbp.groupby('pitch').agg(
             pred_hr = ('pred_hr','mean'),
-            count = ('count','sum')).reset_index().round(2)
+            pitch_count = ('count','sum')).reset_index().round(2)
         pbp['Stadium'] = team
         bullpen_stats = bullpen_stats.append(pbp)
     bullpen_stats = bullpen_stats.reset_index(drop=True)
     scope = bullpen_stats.query('Stadium == @team')
-    total_count = scope['count'].sum()
-    bullpen_stats.loc[bullpen_stats['Stadium'] == team, 'percentage'] = bullpen_stats.loc[bullpen_stats['Stadium'] == team, 'count'] / total_count
+    total_count = scope['pitch_count'].sum()
+    bullpen_stats.loc[bullpen_stats['Stadium'] == team, 'percentage'] = bullpen_stats.loc[bullpen_stats['Stadium'] == team, 'pitch_count'] / total_count
 
 bullpen_stats = bullpen_stats.round(3)
 
 del teams, scope, pbp, total_count, pitch_list, pitch, team
 
-#% get lineup data via rotowire
+#%% get lineup data via rotowire
 
 """
 self-explanatory - we go to rotowire and pull their projected lineups for the day
@@ -358,7 +367,7 @@ lineups['pitcher'] = lineups['pitcher'].apply(unidecode).str.replace(' Jr.', '',
 driver.close()
 del g,p,pi,a_team,h_team,driver,driver_path,opts,url,x,status,pitcher,last_name,initial,name_check,player,order
 
-#% ratings for matchups
+#%% ratings for matchups
 
 
 
@@ -505,8 +514,8 @@ del b_name, p_name, matchup, amt, rating, bat, pitch, bat_r, pit_r, zs1, zs2, bp
 pulling player HR odds from popular sportsbooks: in this case just fanduel and
 draftkings"""
 
-#games = int(len(lineups.query('lineup_spot == 1'))/2)
-games = 15
+games = int(len(lineups.query('lineup_spot == 1'))/2)
+#games = 15
 opts = FirefoxOptions()
 opts.add_argument("--width=1350")
 opts.add_argument("--height=1025")
@@ -543,7 +552,6 @@ for i in range(1,games+1):
     tab = driver.find_element(By.TAG_NAME, 'table')
     tab_html = tab.get_attribute('outerHTML')
     df = pd.read_html(tab_html)[0]
-    df = df[['Bet Name','MGM']]
     all_odds = all_odds.append([df])
     driver.back()
 all_odds = all_odds.reset_index(drop=True)
@@ -551,7 +559,7 @@ driver.close()
 del games, opts, driver_path, driver, event,timer,url,link,tab,tab_html,df,q,i
 
 # fixing df and getting odd diffs
-
+all_odds = all_odds[['Bet Name','MGM','ESPN']].reset_index()
 split_df = all_odds['Bet Name'].str.split(' ', expand=True)
 try: split_df.columns = ['0', '1', '2','3','4','5']
 except ValueError:split_df.columns = ['0', '1', '2','3','4']
@@ -569,18 +577,20 @@ for i in range(0,len(all_odds)):
         split_df['player'][i] = split_df['0'][i]+' '+split_df['1'][i]+' '+split_df['2'][i]+' '+split_df['3'][i]
         split_df['bet'][i] = split_df['4'][i]
         split_df['amount'][i] = split_df['5'][i]
-split_df['Best'] = all_odds['Best']
+split_df[['MGM','ESPN']] = all_odds[['MGM','ESPN']]
 try: split_df = split_df.drop(columns=['0','1','2','3','4','5'])
 except KeyError: split_df = split_df.drop(columns=['0','1','2','3','4'])
 split_df = split_df.query('bet == "Under" and amount == "0.5"')
 
-split_df = split_df.dropna(subset=['FanDuel','DraftKings'],how='all')
-split_df = split_df[['player','FanDuel','DraftKings']]
-split_df = split_df.sort_values(by='FanDuel',ascending=True)
+split_df = split_df.dropna(subset=['MGM','ESPN'],how='all')
+split_df = split_df[['player','MGM','ESPN']]
+split_df = split_df.sort_values(by='MGM',ascending=False)
 split_df = split_df.drop_duplicates(subset='player',keep='first')
 split_df['player'] = split_df['player'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
 lineups = lineups.merge(split_df,on='player')
+lineups = lineups.query('rating != 0').reset_index(drop=True)
 del split_df,all_odds,i
+
 
 end = datetime.now()
 time = end-start
@@ -589,41 +599,64 @@ del start,end
 """
 after collecting sufficient data, we found that the mean rating was 5, and 
 every 1 in 7 batters produced a home run. So to calculate odds, we are claiming that
-any hitter with a 5.0 rating has a 14.3% chance to hit a homerun (+800), and any
+any hitter with a 5.4 rating has a 14.3% chance to hit a homerun (+800), and any
 decimal point either above or below that will act as a modifier to the percentage.
 
 For example, if the matchup rating was 10.0, that player would have a 28.6%, or
 +250, chance of hitting a home run, since 5 is double 10"""
 
-lineups['pred_hr'] = round(0.143*(lineups.rating/5),3)*100
-lineups['pred_odds'] = round(((100/(lineups.pred_hr))*100)-100)
+lineups['pred_odds'] = round(((100-round(lineups.rating/mean(lineups.rating)*.144,3)*100)/(100-(100-round(lineups.rating/mean(lineups.rating)*.144,3)*100)))*100)*-1
+lineups['diff'] =0
+for i in range(len(lineups)):
+        lineups['diff'][i] = pd.Series([lineups.MGM[i], lineups.ESPN[i]]).max()-lineups.pred_odds[i]
+        
+lineups['sb_no_hr'] = 0
+for i in range(len(lineups)):
+    value = pd.Series([lineups.MGM[i], lineups.ESPN[i]]).max()
+    lineups.sb_no_hr[i] = round(100*(value/(value-100)),1)
+
+
 
 """
 after calculating our own odds, we will compare them to the more favorable of the
 sportsbooks we pulled, and produce the difference in our odds vs theirs, in this
 case, a higher number would be seen as more percieved value over the sports books"""
 
-lineups['diff'] =0
-for i in range(len(lineups)):
-        lineups['diff'][i] = max([lineups.FanDuel[i],lineups.DraftKings[i]])-lineups.pred_odds[i]
 
-"""After that, we want to have a mathmatically consistent method of slecting our
-'picks' for the website. 
-
-
-After looking at the data, we found that a predicted
-chance of 18.0% is where the hitters really start to outperform the model, so 
-out pick must have at least that high of a percentage
-
-Once it's narrowed down to just those hitters, their difference between predicted
-and actual odds must be at least 200. There is no real math behind this selection,
-I just didn't want their to be too many selections each day.
+""" Next is the criteria for selecting our "pick" for that day's games. After
+running ROI analysis on the data collected throughout July, there are two boxes
+that need to be checked in order to bet a player's under:
+    
+    - A sportsbook predicted chabce of no HR at 88% or higher
+    - a positive difference between predicted odds and sportsbook odds of
+      at least 150
+     
+    Using this criteria, we selected 56 players between July 3rd and July 21st
+    to not hit a home run, and came away with a 55-1 record, as well as 9.7%
+    ROI
 """
 
-good = lineups.query('pred_hr >= 15.0')
-good = good.sort_values(by='diff',ascending = False).reset_index(drop=True)
-good['pick'] = good.apply(lambda row: 1 if row['diff']*row['pred_hr'] >= 3600 else 0, axis = 1)
-good = good[['team','player','pick']]
-lineups = lineups.merge(good,on=['player','team'],how='left')
-lineups['pick'] = lineups['pick'].fillna(0)
+lineups['pick'] = 0
+for i in range(len(lineups)):
+    if lineups.sb_no_hr[i] >= 88.0 and lineups['diff'][i] >= 150:
+        lineups.pick[i] = 1
+    else:
+        continue
+from datetime import date
+lineups['date'] = date.today()
+
+import pybaseball as bb
+yesterday = pd.read_csv('daily_lineups.csv')
+yesterday['hr'] = 0
 lineups.to_csv('daily_lineups.csv',index=False)
+for i in range(len(yesterday)):
+    name = yesterday.playerid[i]
+    date = yesterday.date[i]
+    stats = bb.statcast_batter(date,date,name)
+    if stats.empty: yesterday = yesterday.drop(i)
+    elif 'home_run' in list(stats.events.unique()): yesterday.hr[i] = 1
+    else: continue
+del name, date, stats, i
+
+archive = pd.read_csv('archives.csv')
+archive = archive.append(yesterday)
