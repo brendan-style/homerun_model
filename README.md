@@ -35,3 +35,11 @@ rolling hr rate here
 Now that it can be seen that higher ratings do in fact correlate to higher home run rates, I then tested the home run rates relative to actual, to see where my model might have value over the sportsbooks.
 
 ![](./images/value_plot.png)
+
+While this plot does show that my model is closer to predicting the actual HR rate than the sportsbooks, it also shows that there is no range where my model overperforms them, due to the vig that the sportsbooks bake into their odds. Because of this edge, it would be nearly impossible to beat them in the overs game. I ran 99 different thresholds for betting critieria, and only 1 came back with a positive ev - at 0.7% ROI. 
+
+So instead, I decided to bet unders using their odds, since my model was closer to the actual HR rate. Trying this produced far better results - out of over 100 different criteria, the lowest ROI was 0.6%, and the highest was 9.7%. Though the sample size is still small, the highest ROI threshold only made 56 selections, I believe it is large enough to say that my model was effective.
+
+Here is the returns over this span based on a $10 wager for every bet
+
+![](./images/profit_plot.png)
