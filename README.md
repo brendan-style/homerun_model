@@ -15,3 +15,5 @@ Originally, I attempted to utilize logistic regression, gradient boosting, and r
 Since a lot of my stats will likely have some multicollinearity, I decided on using a LASSO regression model to reduce the effects of that as best I can. For the batters, this reduced the original 12 features down to 9, and reduced the pitching features from 16 to 9
 
 ### Batters
+
+![](./images/batter_coefs.png)
