@@ -169,6 +169,23 @@ batters.query('game_year == 2024').to_csv('2024_batters.csv')
 
 del choices, conditions
 
+#%% getting results from yesterday's games
+import pandas as pd
+import pybaseball as bb
+yesterday = pd.read_csv('daily_lineups.csv')
+yesterday['hr'] = 0
+for i in range(0,len(yesterday)):
+    name = yesterday.playerid[i]
+    date = yesterday.date[i]
+    stats = bb.statcast_batter(date,date,name)
+    if stats.empty: yesterday = yesterday.drop(i)
+    elif 'home_run' in list(stats.events.unique()): yesterday.hr[i] = 1
+    else: continue
+del name, date, stats, i
+
+archive = pd.read_csv('archives.csv')
+archive = archive.append(yesterday)
+archive.to_csv('archives.csv',index=False)
 #%% rosters using r code
 
 """
@@ -238,7 +255,7 @@ hit_stats = hit_stats.rename(columns={'pitch_count':'count'})
 hit_stats = hit_stats.rename(columns={'pitch_type':'pitch'})
 del batters, old_hits, old_pitch, pitchers
 
-#%% bullpens
+#% bullpens
 
 """
 the biggest reason we pulled rosters was for this. I haven't gotten far enough
@@ -269,7 +286,7 @@ bullpen_stats = bullpen_stats.round(3)
 
 del teams, scope, pbp, total_count, pitch_list, pitch, team
 
-#%% get lineup data via rotowire
+#% get lineup data via rotowire
 
 """
 self-explanatory - we go to rotowire and pull their projected lineups for the day
@@ -367,7 +384,7 @@ lineups['pitcher'] = lineups['pitcher'].apply(unidecode).str.replace(' Jr.', '',
 driver.close()
 del g,p,pi,a_team,h_team,driver,driver_path,opts,url,x,status,pitcher,last_name,initial,name_check,player,order
 
-#%% ratings for matchups
+#% ratings for matchups
 
 
 
@@ -507,7 +524,7 @@ merger = merger.rename(columns={'Stadium':'team','player_name':'player'}).drop_d
 lineups = lineups.merge(merger, how='left',on = ['team','player'])
 del b_name, p_name, matchup, amt, rating, bat, pitch, bat_r, pit_r, zs1, zs2, bp_pa, bf_mean, bf_std, prob, pa, bp, q, i, bp_rating, real_pitches, spot, pa_per_game, pa_mod, starter_mod,bp_mod,stadium,opp_bp,p,hr_rating,pa_count,starter_pa,park,bats,throws,merger
 
-#%% player odds
+#% player odds
 
 
 """
@@ -597,15 +614,15 @@ time = end-start
 del start,end
 
 """
-after collecting sufficient data, we found that the mean rating was 5, and 
+after collecting sufficient data, we found that the mean rating was around 5.6, and 
 every 1 in 7 batters produced a home run. So to calculate odds, we are claiming that
-any hitter with a 5.4 rating has a 14.3% chance to hit a homerun (+800), and any
+any hitter with a 5.4 rating has a 14.4% chance to hit a homerun (+800), and any
 decimal point either above or below that will act as a modifier to the percentage.
 
 For example, if the matchup rating was 10.0, that player would have a 28.6%, or
 +250, chance of hitting a home run, since 5 is double 10"""
 
-lineups['pred_odds'] = round(((100-round(lineups.rating/mean(lineups.rating)*.144,3)*100)/(100-(100-round(lineups.rating/mean(lineups.rating)*.144,3)*100)))*100)*-1
+lineups['pred_odds'] = round(((100-round(lineups.rating/mean(archive.rating)*.144,3)*100)/(100-(100-round(lineups.rating/mean(lineups.rating)*.144,3)*100)))*100)*-1
 lineups['diff'] =0
 for i in range(len(lineups)):
         lineups['diff'][i] = pd.Series([lineups.MGM[i], lineups.ESPN[i]]).max()-lineups.pred_odds[i]
@@ -645,18 +662,13 @@ for i in range(len(lineups)):
 from datetime import date
 lineups['date'] = date.today()
 
-import pybaseball as bb
-yesterday = pd.read_csv('daily_lineups.csv')
-yesterday['hr'] = 0
 lineups.to_csv('daily_lineups.csv',index=False)
-for i in range(len(yesterday)):
-    name = yesterday.playerid[i]
-    date = yesterday.date[i]
-    stats = bb.statcast_batter(date,date,name)
-    if stats.empty: yesterday = yesterday.drop(i)
-    elif 'home_run' in list(stats.events.unique()): yesterday.hr[i] = 1
-    else: continue
-del name, date, stats, i
+#%% check for parlay?
+0.933*0.882
 
-archive = pd.read_csv('archives.csv')
-archive = archive.append(yesterday)
+round(1415/1515,3)*round(2122/2222,3)
+round(round(1415/1515,3)*round(2122/2222,3)/(round(1415/1515,3)*round(2122/2222,3)-1)*100)
+round(round(0.933*0.882,3)/(round(0.933*0.882,3)-1)*100)
+
+#we should parlay the picks on 8/08, just not sure how to implement
+

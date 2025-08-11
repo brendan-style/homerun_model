@@ -497,7 +497,7 @@ def modify_batters(batters,old_hits,players,ids):
         else:
             pass
         plat_diff = dis.iloc[:,:12]-adv.iloc[:,:12]
-        plat_diff['pred_diff'] = result.predict(plat_diff).round(2)
+        plat_diff['pred_diff'] = result.predict(plat_diff[old_hits.iloc[:,3:16].drop(columns='hr').columns]).round(2)
         names['plat_disc'][i] = plat_diff['pred_diff'][0]
         
     per_pitch_short = per_pitch_short.merge(names,on=['player_name','playerid'])

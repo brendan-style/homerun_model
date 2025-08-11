@@ -222,6 +222,7 @@ y = old_hits.hr
 result = LassoCV(cv=5, random_state=79, max_iter=10000)
 result = result.fit(X, y)
 
+
 weighted = pd.DataFrame()
 for i in range(0,len(names)):
     name = names['playerid'][i]

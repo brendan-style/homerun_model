@@ -266,16 +266,12 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
     
     from sklearn.model_selection import train_test_split
     from sklearn.linear_model import LassoCV
-    from sklearn.metrics import mean_squared_error as mse
-    from scipy.stats import pearsonr
     import numpy as np
     old_pitch = pd.read_csv('old_pitch.csv')
     X = old_pitch.iloc[:,3:20].drop(columns='hr')
     y = old_pitch.hr
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=12)
     result = LassoCV(alphas=np.logspace(-3, 1, 20),cv=5, random_state=14, max_iter=10000)
-    result = result.fit(X_train, y_train)
-    
+    result = result.fit(X, y)  
     
     
     
