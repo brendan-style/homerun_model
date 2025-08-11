@@ -30,7 +30,7 @@ After getting these ratings for each player, I then put the ratings through a se
 
 After finishing the ratings, I took a little over 2 weeks to acquire real-time data to publish results. The results you see are based on 2,649 observations acquired between July 3rd and July 21st, 2025.
 
-rolling hr rate here
+![](./images/rolling_hr_rate.png)
 
 Now that it can be seen that higher ratings do in fact correlate to higher home run rates, I then tested the home run rates relative to actual, to see where my model might have value over the sportsbooks.
 
