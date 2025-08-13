@@ -181,11 +181,11 @@ for i in range(0,len(yesterday)):
     if stats.empty: yesterday = yesterday.drop(i)
     elif 'home_run' in list(stats.events.unique()): yesterday.hr[i] = 1
     else: continue
-del name, date, stats, i
 
 archive = pd.read_csv('archives.csv')
 archive = archive.append(yesterday)
 archive.to_csv('archives.csv',index=False)
+del yesterday, name, date, stats, i
 #%% rosters using r code
 
 """
@@ -582,6 +582,8 @@ try: split_df.columns = ['0', '1', '2','3','4','5']
 except ValueError:split_df.columns = ['0', '1', '2','3','4']
 split_df[['player','bet','amount']] = 'zero'
 for i in range(0,len(all_odds)):
+    if i == 891 or i == 892:
+        continue
     if split_df['2'][i] in ['Over','Under']:
         split_df['player'][i] = split_df['0'][i]+' '+split_df['1'][i]
         split_df['bet'][i] = split_df['2'][i]
@@ -644,7 +646,7 @@ case, a higher number would be seen as more percieved value over the sports book
 running ROI analysis on the data collected throughout July, there are two boxes
 that need to be checked in order to bet a player's under:
     
-    - A sportsbook predicted chabce of no HR at 88% or higher
+    - A sportsbook predicted chance of no HR at 88% or higher
     - a positive difference between predicted odds and sportsbook odds of
       at least 150
      
@@ -663,12 +665,22 @@ from datetime import date
 lineups['date'] = date.today()
 
 lineups.to_csv('daily_lineups.csv',index=False)
-#%% check for parlay?
-0.933*0.882
 
-round(1415/1515,3)*round(2122/2222,3)
-round(round(1415/1515,3)*round(2122/2222,3)/(round(1415/1515,3)*round(2122/2222,3)-1)*100)
-round(round(0.933*0.882,3)/(round(0.933*0.882,3)-1)*100)
+# Parlay Check
 
-#we should parlay the picks on 8/08, just not sure how to implement
+if sum(lineups.pick) > 1:
+    picks = lineups.query('pick == 1').reset_index(drop=True)
+    p_odds = 1
+    s_odds = 1
+    for i in range(len(picks)):
+        p_odds = p_odds*round(picks.pred_odds[i]/(picks.pred_odds[i]-100),3)
+        s_odds = s_odds*round((picks.pred_odds[i]+picks['diff'][i])/((picks.pred_odds[i]+picks['diff'][i])-100),3)
+    p_odds = round(p_odds/(p_odds-1)*100)
+    s_odds = round(s_odds/(s_odds-1)*100)
+    if s_odds - p_odds >= 150:
+        print('There is value in a parlay!')
+    else:
+        print('Better to bet these straight')
+
+
 
