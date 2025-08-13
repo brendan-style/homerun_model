@@ -665,22 +665,30 @@ from datetime import date
 lineups['date'] = date.today()
 
 lineups.to_csv('daily_lineups.csv',index=False)
+lineups['book'] = lineups[['MGM', 'ESPN']].idxmax(axis=1)
 
 # Parlay Check
 
 if sum(lineups.pick) > 1:
     picks = lineups.query('pick == 1').reset_index(drop=True)
-    p_odds = 1
-    s_odds = 1
-    for i in range(len(picks)):
-        p_odds = p_odds*round(picks.pred_odds[i]/(picks.pred_odds[i]-100),3)
-        s_odds = s_odds*round((picks.pred_odds[i]+picks['diff'][i])/((picks.pred_odds[i]+picks['diff'][i])-100),3)
-    p_odds = round(p_odds/(p_odds-1)*100)
-    s_odds = round(s_odds/(s_odds-1)*100)
-    if s_odds - p_odds >= 150:
-        print('There is value in a parlay!')
+    book_counts = picks['book'].value_counts()
+    multi_book = book_counts[book_counts > 1].reset_index().rename(columns={'index':'sb'})
+    if len(multi_book) == 2:
+        pass
     else:
-        print('Better to bet these straight')
+        picks = picks.query('book == @multi_book.sb[0]')
+        p_odds = 1
+        s_odds = 1
+        for i in range(len(picks)):
+            p_odds = p_odds*(picks.pred_odds[i]/(picks.pred_odds[i]-100))
+            s_odds = s_odds*((picks.pred_odds[i]+picks['diff'][i])/((picks.pred_odds[i]+picks['diff'][i])-100))
+        p_odds = round(p_odds/(p_odds-1)*100)
+        s_odds = round(s_odds/(s_odds-1)*100)
+        if s_odds - p_odds >= 150:
+            print('There is value in a parlay!')
+        else:
+            print('Better to bet these straight')
+del book_counts, bullpen_stats,hit_stats,i,ids,multi_book,pitch_stats,players,value
 
 
 
