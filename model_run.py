@@ -182,6 +182,14 @@ for i in range(0,len(yesterday)):
     elif 'home_run' in list(stats.events.unique()): yesterday.hr[i] = 1
     else: continue
 
+yesterday['profit'] = 0
+for i in range(len(yesterday)):
+    if yesterday.pick[i] == 0:
+        continue
+    elif yesterday.pick[i] == 1 and yesterday.hr[i] == 1:
+        yesterday.profit[i] = -10
+    else:
+        yesterday.profit[i] = round(10/((yesterday.pred_odds[i]+yesterday['diff'][i])/-100),2)
 archive = pd.read_csv('archives.csv')
 archive = archive.append(yesterday)
 archive.to_csv('archives.csv',index=False)
@@ -624,7 +632,7 @@ decimal point either above or below that will act as a modifier to the percentag
 For example, if the matchup rating was 10.0, that player would have a 28.6%, or
 +250, chance of hitting a home run, since 5 is double 10"""
 
-lineups['pred_odds'] = round(((100-round(lineups.rating/mean(archive.rating)*.144,3)*100)/(100-(100-round(lineups.rating/mean(lineups.rating)*.144,3)*100)))*100)*-1
+lineups['pred_odds'] = round(((100-round(lineups.rating/mean(archive.rating)*.144,3)*100)/(100-(100-round(lineups.rating/mean(archive.rating)*.144,3)*100)))*100)*-1
 lineups['diff'] =0
 for i in range(len(lineups)):
         lineups['diff'][i] = pd.Series([lineups.MGM[i], lineups.ESPN[i]]).max()-lineups.pred_odds[i]
@@ -650,9 +658,7 @@ that need to be checked in order to bet a player's under:
     - a positive difference between predicted odds and sportsbook odds of
       at least 150
      
-    Using this criteria, we selected 56 players between July 3rd and July 21st
-    to not hit a home run, and came away with a 55-1 record, as well as 9.7%
-    ROI
+    Using this criteria, we have a track record of 64-2, with an 8.1% ROI
 """
 
 lineups['pick'] = 0
@@ -664,9 +670,10 @@ for i in range(len(lineups)):
 from datetime import date
 lineups['date'] = date.today()
 
-lineups.to_csv('daily_lineups.csv',index=False)
 lineups['book'] = lineups[['MGM', 'ESPN']].idxmax(axis=1)
-
+lineups['odds'] = lineups[['MGM', 'ESPN']].max(axis=1)
+lineups = lineups.drop(columns=['MGM','ESPN'])
+lineups.to_csv('daily_lineups.csv',index=False)
 # Parlay Check
 
 if sum(lineups.pick) > 1:
@@ -688,7 +695,15 @@ if sum(lineups.pick) > 1:
             print('There is value in a parlay!')
         else:
             print('Better to bet these straight')
-del book_counts, bullpen_stats,hit_stats,i,ids,multi_book,pitch_stats,players,value
+    del book_counts, bullpen_stats,hit_stats,i,ids,multi_book,pitch_stats,players,value
 
 
 
+archive['profit'] = 0
+for i in range(len(archive)):
+    if archive.pick[i] == 0:
+        continue
+    elif archive.pick[i] == 1 and archive.hr[i] == 1:
+        archive.profit[i] = -10
+    else:
+        archive.profit[i] = round(10/((archive.pred_odds[i]+archive['diff'][i])/-100),2)

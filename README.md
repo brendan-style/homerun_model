@@ -40,6 +40,7 @@ While this plot does show that my model is closer to predicting the actual HR ra
 
 So instead, I decided to bet unders using their odds, since my model was closer to the actual HR rate. Trying this produced far better results - out of over 100 different criteria, the lowest ROI was 0.6%, and the highest was 9.7%. Though the sample size is still small, the highest ROI threshold only made 56 selections, I believe it is large enough to say that my model was effective.
 
-Here are the returns over this span based on a $10 wager for every bet
+
+Here are the returns over this span based on a $10 wager for every bet, last updated 8/13/25
 
 ![](./images/profit_plot.png)

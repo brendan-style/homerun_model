@@ -276,10 +276,10 @@ import numpy as np
 
 # Assuming your dataframe is called 'df'
 # First, ensure date column is datetime
-all_ratings['date'] = pd.to_datetime(all_ratings['date'])
+all_picks['date'] = pd.to_datetime(all_picks['date'])
 
 # Sort by date to ensure proper time series
-df_sorted = all_ratings.sort_values('date').copy()
+df_sorted = all_picks.sort_values('date').copy()
 
 # Calculate cumulative profit over time
 df_sorted['cumulative_profit'] = df_sorted['profit'].cumsum()
@@ -310,7 +310,7 @@ plt.tight_layout()
 #plt.axhline(y=0, color='red', linestyle='--', alpha=0.7, label='Break-even')
 
 # Add ROI text annotation
-plt.text(0.20, 0.87, 'ROI: 9.67%', transform=plt.gca().transAxes, 
+plt.text(0.20, 0.87, 'ROI: 8.1%', transform=plt.gca().transAxes, 
          fontsize=14, fontweight='bold', verticalalignment='top',
          bbox=dict(boxstyle='square', facecolor='lightblue', alpha=0.8))
 all_ratings.to_csv('all_ratings.csv')
@@ -428,19 +428,15 @@ def backtest_diff_thresholds(df, diff_thresholds=None, bet_amount=10):
 
 #%%
 
-import pandas as pd
-import numpy as np
-from itertools import product
-
 def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount=10):
     """
     Backtest different threshold combinations for sports betting picks on UNDER bets.
     Bets that players will NOT hit home runs.
     
     Parameters:
-    df: DataFrame with columns ['diff', 'sb_under_pred', 'HR', 'sb_under_odds']
+    df: DataFrame with columns ['diff', 'pred_odds', 'hr', 'odds']
     diff_thresholds: list of diff thresholds to test
-    pred_hr_thresholds: list of sb_under_pred thresholds to test (as percentages)
+    pred_hr_thresholds: list of sb_no_hr thresholds to test (as percentages)
     bet_amount: amount wagered per bet (default 10)
     
     Returns:
@@ -449,10 +445,10 @@ def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_a
     
     # Default thresholds if not provided
     if diff_thresholds is None:
-        diff_thresholds = [0, -25, -50, -75, -100, -125, -150, -175, -200, -250, -300]
+        diff_thresholds = [0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300]
     
     if pred_hr_thresholds is None:
-        pred_hr_thresholds = [90, 88, 86, 85, 84, 82, 80, 78, 75, 65, 60]  # Fixed the typo (16 -> 84)
+        pred_hr_thresholds = [90, 88, 86, 85, 84, 82, 80, 78, 75, 65, 60]
     
     results = []
     
@@ -463,9 +459,9 @@ def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_a
         df_copy = df.copy()
         
         # Assign picks based on thresholds (1 if meets criteria, 0 if not)
-        # For under bets: we want high under prediction (low HR probability) and negative diff
-        df_copy['pick'] = np.where(
-            (df_copy['diff'] <= diff_thresh) & (df_copy['sb_under_pred'] >= pred_hr_thresh), 
+        # For under bets: we want high under prediction (low HR probability) and positive diff
+        df_copy['pick_calculated'] = np.where(
+            (df_copy['diff'] >= diff_thresh) & (df_copy['sb_no_hr'] >= pred_hr_thresh), 
             1, 
             0
         )
@@ -474,17 +470,15 @@ def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_a
         df_copy['calculated_profit'] = 0.0
         
         for idx in df_copy.index:
-            if df_copy.loc[idx, 'pick'] == 1:
-                # Get the under odds - use sb_under_odds, fallback to calculated from sb_odds
-                if 'sb_under_odds' in df_copy.columns and pd.notna(df_copy.loc[idx, 'sb_under_odds']):
-                    odds = df_copy.loc[idx, 'sb_under_odds']
-                elif 'sb_odds' in df_copy.columns and pd.notna(df_copy.loc[idx, 'sb_odds']):
-                    odds = df_copy.loc[idx, 'sb_odds']  # Assuming this is actually the under odds
-                else:
+            if df_copy.loc[idx, 'pick_calculated'] == 1:
+                # Get the odds
+                odds = df_copy.loc[idx, 'odds']
+                
+                if pd.isna(odds):
                     # Skip this pick if no odds available
                     continue
                 
-                if df_copy.loc[idx, 'HR'] == 0:
+                if df_copy.loc[idx, 'hr'] == 0:
                     # WIN: Player did NOT hit a home run
                     if odds > 0:
                         profit = (odds / 100) * bet_amount
@@ -499,7 +493,7 @@ def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_a
                 df_copy.loc[idx, 'calculated_profit'] = 0.0
         
         # Filter to only the picks made
-        picks_made = df_copy[df_copy['pick'] == 1].copy()
+        picks_made = df_copy[df_copy['pick_calculated'] == 1].copy()
         
         if len(picks_made) == 0:
             # No qualifying picks
@@ -520,7 +514,7 @@ def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_a
         
         # Calculate metrics
         num_picks = len(picks_made)
-        wins = (picks_made['HR'] == 0).sum()  # WIN when HR == 0 for under bets
+        wins = (picks_made['hr'] == 0).sum()  # WIN when hr == 0 for under bets
         losses = num_picks - wins
         win_rate = (wins / num_picks) * 100 if num_picks > 0 else 0
         
