@@ -44,7 +44,7 @@ from numpy import nan
 pitchers = pd.read_csv('all_pitchers.csv')
 pitchers = pitchers.rename(columns={'last_name, first_name':'name'})
 pitchers = pitchers.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
-for i in range(460,len(pitchers)):
+for i in range(0,len(pitchers)):
     stats = bb.statcast_pitcher("2024-03-01","2025-11-01",pitchers.iloc[:,1][i])
     if stats.empty:
         continue
@@ -58,7 +58,7 @@ for i in range(460,len(pitchers)):
     else: pitches = pitches.append(stats)
     
 pitches = pitches.reset_index().drop(columns='index').drop_duplicates()
-pitches.to_csv('24_pitchers.csv',index=False)
+pitches.to_csv('pitchers.csv',index=False)
 del stats, i
 #%% altering datasets
 
@@ -95,12 +95,12 @@ pitchers['description'] = pitchers['description'].str.replace('foul_tip', 'swing
 # discovered that bb_types were not correct so changed them manually
 
 pitchers = pitchers.reset_index().drop(columns='index')
-conditions = [
-pitchers['launch_angle'].isna(),
+conditions = [pitchers['launch_angle'].isna(),
 pitchers['launch_angle'] < 10,
 (pitchers['launch_angle'] >= 10) & (pitchers['launch_angle'] < 25),
-(pitchers['launch_angle'] >= 25)]
-choices = ['nan','ground_ball','line_drive','fly_ball']
+(pitchers['launch_angle'] >= 25) & (pitchers['launch_angle'] < 50),
+pitchers['launch_angle'] >= 50]
+choices = ['nan','ground_ball','line_drive','fly_ball','popup']
 pitchers['bb_type'] = select(conditions, choices) 
 pitchers['bb_type'].replace('nan',pitchers['launch_angle'][1], inplace = True)
 pitchers = pitchers.reset_index().drop(columns='index')
@@ -118,12 +118,6 @@ pitchers['in_zone'] = (pitchers['zone'] < 10).astype(int)
 pitchers['chase'] = pitchers.apply(lambda row: 1 if row['swing'] == 1 and row['in_zone'] == 0 else 0, axis = 1)
 pitchers['plate_x'] = abs(pitchers.plate_x)
 
-pitches_y = pitchers.query('year == 2024 and age_pit > 28')
-pitches_o = pitchers.query('year == 2024 and age_pit <= 28')
-pitches_t = pitchers.query('year == 2025')
-pitches_y.to_csv('2024_pitchers_pt_1.csv',index=False)
-pitches_o.to_csv('2024_pitchers_pt_2.csv',index=False)
-pitches_t.to_csv('2025_pitchers.csv',index=False)
 
 # batters
 batters = pd.read_csv('batters.csv')
@@ -140,12 +134,12 @@ batters['description'] = batters['description'].str.replace('foul_tip', 'swingin
 # discovered that bb_types were not correct so changed them manually
 
 batters = batters.reset_index().drop(columns='index')
-conditions = [
-    batters['launch_angle'].isna(),
-    batters['launch_angle'] < 10,
-    (batters['launch_angle'] >= 10) & (batters['launch_angle'] <= 25),
-    (batters['launch_angle'] > 25)]
-choices = ['nan','ground_ball','line_drive','fly_ball']
+conditions = [batters['launch_angle'].isna(),
+batters['launch_angle'] < 10,
+(batters['launch_angle'] >= 10) & (batters['launch_angle'] < 25),
+(batters['launch_angle'] >= 25) & (batters['launch_angle'] < 50),
+batters['launch_angle'] >= 50]
+choices = ['nan','ground_ball','line_drive','fly_ball','popup']
 batters['bb_type'] = select(conditions, choices) 
 batters['bb_type'].replace('nan',batters['launch_angle'][1], inplace = True)
 batters = batters[~batters['events'].isin(['sac_bunt','sac_bunt_double_play'])]
@@ -164,11 +158,28 @@ batters['hh'] = (batters['launch_speed'] >= 95).astype(int)
 batters['in_zone'] = (batters['zone'] < 10).astype(int)
 batters['chase'] = batters.apply(lambda row: 1 if row['swing'] == 1 and row['in_zone'] == 0 else 0, axis = 1)
 
-batters.query('game_year == 2025').to_csv('2025_batters.csv')
-batters.query('game_year == 2024').to_csv('2024_batters.csv')
 
 del choices, conditions
 
+from modify_batters import modify_batters
+from modify_pitchers import modify_pitchers
+
+batters['player_name'] = batters['player_name'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
+old_hits = pd.read_csv('old_hits.csv')
+hit_stats = modify_batters(batters, old_hits)
+
+pitchers['player_name'] = pitchers['player_name'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
+old_pitch = pd.read_csv('old_pitch.csv')
+pitchers = pitchers.drop_duplicates()
+pitch_stats = modify_pitchers(pitchers, old_pitch)
+
+pitch_stats = pitch_stats.rename(columns={'pitch_count':'count'})
+pitch_stats = pitch_stats.rename(columns={'pitch_type':'pitch'})
+hit_stats = hit_stats.rename(columns={'pitch_count':'count'})
+hit_stats = hit_stats.rename(columns={'pitch_type':'pitch'})
+
+hit_stats.to_csv('hit_stats.csv',index=False)
+pitch_stats.to_csv('pitch_stats.csv',index=False)
 #%% getting results from yesterday's games
 import pandas as pd
 import pybaseball as bb
@@ -176,11 +187,12 @@ yesterday = pd.read_csv('daily_lineups.csv')
 yesterday['hr'] = 0
 for i in range(0,len(yesterday)):
     name = yesterday.playerid[i]
-    date = yesterday.date[i]
+    date = str(yesterday.date[i])
     stats = bb.statcast_batter(date,date,name)
     if stats.empty: yesterday = yesterday.drop(i)
     elif 'home_run' in list(stats.events.unique()): yesterday.hr[i] = 1
     else: continue
+yesterday = yesterday.reset_index(drop=True)
 
 yesterday['profit'] = 0
 for i in range(len(yesterday)):
@@ -189,11 +201,12 @@ for i in range(len(yesterday)):
     elif yesterday.pick[i] == 1 and yesterday.hr[i] == 1:
         yesterday.profit[i] = -10
     else:
-        yesterday.profit[i] = round(10/((yesterday.pred_odds[i]+yesterday['diff'][i])/-100),2)
+        yesterday.profit[i] = round(10/((yesterday.odds[i])/-100),2)
 archive = pd.read_csv('archives.csv')
 archive = archive.append(yesterday)
 archive.to_csv('archives.csv',index=False)
 del yesterday, name, date, stats, i
+
 #%% rosters using r code
 
 """
@@ -227,42 +240,30 @@ os.unlink(temp_script)
 players = pd.read_csv(StringIO(result.stdout))
 players = players.applymap(lambda x: unidecode(str(x)) if pd.notna(x) else x)
 del f,r_code,result,temp_script
-#%% loading datasets
+#% loading datasets
 
 """
 now we run our UDF's for collecting the stats we need to predict HR chance.
 """
 
-from modify_batters import modify_batters
-from modify_pitchers import modify_pitchers
 import pandas as pd
 from unidecode import unidecode
 from datetime import datetime
 start = datetime.now()
+hit_stats = pd.read_csv('hit_stats.csv')
+pitch_stats = pd.read_csv('pitch_stats.csv')
 players['person_full_name'] = players['person_full_name'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
 ids = pd.read_excel('HR_factors.xlsx')
-batters_24 = pd.read_csv('2024_batters.csv')
-batters_25 = pd.read_csv('2025_batters.csv')
-batters = pd.concat([batters_24,batters_25])
-del batters_24, batters_25
-batters['player_name'] = batters['player_name'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
-old_hits = pd.read_csv('old_hits.csv')
-hit_stats = modify_batters(batters, old_hits,players,ids)
-pitchers_241 = pd.read_csv('2024_pitchers_pt_1.csv')
-pitchers_242 = pd.read_csv('2024_pitchers_pt_2.csv')
-pitchers_25 = pd.read_csv('2025_pitchers.csv').drop_duplicates()
-pitchers = pd.concat([pitchers_241,pitchers_242,pitchers_25])
-del pitchers_241, pitchers_242, pitchers_25
-pitchers['player_name'] = pitchers['player_name'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
-old_pitch = pd.read_csv('old_pitch.csv')
-pitchers = pitchers.drop_duplicates()
-pitch_stats = modify_pitchers(pitchers, old_pitch,players,ids)
-pitch_stats = pitch_stats.rename(columns={'pitch_count':'count'})
-pitch_stats = pitch_stats.rename(columns={'pitch_type':'pitch'})
-hit_stats = hit_stats.rename(columns={'pitch_count':'count'})
-hit_stats = hit_stats.rename(columns={'pitch_type':'pitch'})
-del batters, old_hits, old_pitch, pitchers
-
+players['team_id'] = players['team_id'].astype(int)
+players = players.merge(ids, on='team_id', how='left')
+players = players[['person_id','Stadium','person_full_name']]
+players = players.rename(columns={'person_id':'playerid','person_full_name':'player_name'})
+players['playerid'] = players['playerid'].astype(int)
+hit_stats = hit_stats.merge(players,how='inner',on=['playerid','player_name'])
+hit_stats = hit_stats.drop_duplicates().reset_index(drop=True)
+pitch_stats = pitch_stats.merge(players,how='inner',on=['playerid','player_name'])
+pitch_stats = pitch_stats.drop_duplicates()
+pitch_stats = pitch_stats.reset_index(drop=True)
 #% bullpens
 
 """
@@ -276,7 +277,7 @@ teams = list(pitch_stats.Stadium.unique())
 bullpen_stats = pd.DataFrame()
 for team in teams:
     scope = pitch_stats.query('Stadium == @team')
-    scope = scope.query('avg_bf < 7.0')
+    scope = scope.query('avg_bf < 7.0 and std_bf < 4.0')
     pitch_list = list(scope.pitch.unique())
     for pitch in pitch_list:
         pbp = scope.query('pitch == @pitch')
@@ -325,7 +326,7 @@ driver.get(url)
 time.sleep(7)
 lineups = pd.DataFrame()
 g = 1
-while g < 50:
+while g < 30:
     try:
          a_team = driver.find_element(By.CSS_SELECTOR, 'div.lineup:nth-child('+str(g)+') > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2)').text
     except NoSuchElementException:
@@ -540,7 +541,7 @@ pulling player HR odds from popular sportsbooks: in this case just fanduel and
 draftkings"""
 
 games = int(len(lineups.query('lineup_spot == 1'))/2)
-#games = 15
+#games = 1
 opts = FirefoxOptions()
 opts.add_argument("--width=1350")
 opts.add_argument("--height=1025")
@@ -589,8 +590,8 @@ split_df = all_odds['Bet Name'].str.split(' ', expand=True)
 try: split_df.columns = ['0', '1', '2','3','4','5']
 except ValueError:split_df.columns = ['0', '1', '2','3','4']
 split_df[['player','bet','amount']] = 'zero'
-for i in range(0,len(all_odds)):
-    if i == 891 or i == 892:
+for i in range(1,len(all_odds)):
+    if split_df['3'][i] == None:
         continue
     if split_df['2'][i] in ['Over','Under']:
         split_df['player'][i] = split_df['0'][i]+' '+split_df['1'][i]
@@ -632,14 +633,16 @@ decimal point either above or below that will act as a modifier to the percentag
 For example, if the matchup rating was 10.0, that player would have a 28.6%, or
 +250, chance of hitting a home run, since 5 is double 10"""
 
-lineups['pred_odds'] = round(((100-round(lineups.rating/mean(archive.rating)*.144,3)*100)/(100-(100-round(lineups.rating/mean(archive.rating)*.144,3)*100)))*100)*-1
-lineups['diff'] =0
-for i in range(len(lineups)):
-        lineups['diff'][i] = pd.Series([lineups.MGM[i], lineups.ESPN[i]]).max()-lineups.pred_odds[i]
+lineups['pred_odds'] = round(((100-round(lineups.rating/mean(archive.dropna().rating)*(sum(archive.hr)/len(archive)),3)*100)/(100-(100-round(lineups.rating/mean(archive.dropna().rating)*.144,3)*100)))*100)*-1
+lineups['book'] = lineups[['MGM', 'ESPN']].idxmax(axis=1)
+lineups['odds'] = lineups[['MGM', 'ESPN']].max(axis=1)
+lineups = lineups.drop(columns=['MGM','ESPN'])
+lineups['diff'] = lineups.odds-lineups.pred_odds
+
         
 lineups['sb_no_hr'] = 0
 for i in range(len(lineups)):
-    value = pd.Series([lineups.MGM[i], lineups.ESPN[i]]).max()
+    value = lineups.odds[i]
     lineups.sb_no_hr[i] = round(100*(value/(value-100)),1)
 
 
@@ -670,20 +673,15 @@ for i in range(len(lineups)):
 from datetime import date
 lineups['date'] = date.today()
 
-lineups['book'] = lineups[['MGM', 'ESPN']].idxmax(axis=1)
-lineups['odds'] = lineups[['MGM', 'ESPN']].max(axis=1)
-lineups = lineups.drop(columns=['MGM','ESPN'])
 lineups.to_csv('daily_lineups.csv',index=False)
-# Parlay Check
 
-if sum(lineups.pick) > 1:
-    picks = lineups.query('pick == 1').reset_index(drop=True)
-    book_counts = picks['book'].value_counts()
-    multi_book = book_counts[book_counts > 1].reset_index().rename(columns={'index':'sb'})
-    if len(multi_book) == 2:
-        pass
-    else:
-        picks = picks.query('book == @multi_book.sb[0]')
+#%% Parlay Check
+picks = lineups.query('pick == 1')
+book_counts = picks['book'].value_counts()
+multi_book = book_counts[book_counts > 1].reset_index().rename(columns={'index':'sb'})
+if not multi_book.empty:
+    for book in list(multi_book.sb):
+        picks = picks.query('book == @book').reset_index(drop=True)
         p_odds = 1
         s_odds = 1
         for i in range(len(picks)):
@@ -692,18 +690,88 @@ if sum(lineups.pick) > 1:
         p_odds = round(p_odds/(p_odds-1)*100)
         s_odds = round(s_odds/(s_odds-1)*100)
         if s_odds - p_odds >= 150:
-            print('There is value in a parlay!')
+            print(f'There is value in a parlay for the picks on {book}')
         else:
-            print('Better to bet these straight')
-    del book_counts, bullpen_stats,hit_stats,i,ids,multi_book,pitch_stats,players,value
+            print(f'There is inadequate value in parlaying the picks on {book}')
+else:
+    print('Not enough picks for a parlay')
 
+#%% Convert prior straight bets to parlay's to check for more value
 
-
-archive['profit'] = 0
-for i in range(len(archive)):
-    if archive.pick[i] == 0:
+import pandas as pd
+archive = pd.read_csv('archives.csv')
+dates = list(archive.date.unique())
+parlay_prof = pd.DataFrame()
+for date in dates:
+    picks = archive.query('date == @date and pick == 1')
+    if len(picks) < 2:
+        picks['parlay'] = 0
+        parlay_prof = parlay_prof.append(picks)
         continue
-    elif archive.pick[i] == 1 and archive.hr[i] == 1:
-        archive.profit[i] = -10
     else:
-        archive.profit[i] = round(10/((archive.pred_odds[i]+archive['diff'][i])/-100),2)
+        book_counts = picks['book'].value_counts()
+        multi_book = book_counts[book_counts > 1].reset_index().rename(columns={'index':'sb'})
+        for book in list(multi_book.sb):
+            daily_picks = picks.query('book == @book').reset_index(drop=True)
+            p_odds = 1
+            s_odds = 1
+            for i in range(len(daily_picks)):
+                p_odds = p_odds*(daily_picks.pred_odds[i]/(daily_picks.pred_odds[i]-100))
+                s_odds = s_odds*((daily_picks.odds[i])/((daily_picks.odds[i])-100))
+            p_odds = round(p_odds/(p_odds-1)*100)
+            s_odds = round(s_odds/(s_odds-1)*100)
+            if s_odds - p_odds >= 150:
+                daily_picks['parlay'] = 1
+                daily_picks['odds'] = s_odds
+                if sum(daily_picks.hr) == 0:
+                    profit = round(10/((daily_picks.odds[0])/-100),2)
+                    daily_picks.profit = round(profit/len(daily_picks),2)
+                    parlay_prof = parlay_prof.append(daily_picks)
+                else:
+                    profit = -10
+                    daily_picks.profit = round(profit/len(daily_picks),2)
+                    parlay_prof = parlay_prof.append(daily_picks)
+            else:
+                daily_picks['parlay'] = 0
+                parlay_prof = parlay_prof.append(daily_picks)
+sum(parlay_prof.profit)
+sum(archive.profit)
+#round(100*(-851/(-851-100)),1)
+#%% trying new betting method
+import pandas as pd
+archive = pd.read_csv('archives.csv')
+dates = list(archive.date.unique())
+value = 10
+for date in dates:
+    picks = archive.query('date == @date and pick == 1')
+    if picks.empty:
+        continue
+    elif len(picks) < 2:
+        value += round(sum(picks.profit)/2,2)
+        continue
+    else:
+        book_counts = picks['book'].value_counts()
+        multi_book = book_counts[book_counts > 1].reset_index().rename(columns={'index':'sb'})
+        if not multi_book.empty:
+            for book in list(multi_book.sb):
+                daily_picks = picks.query('book == @book').reset_index(drop=True)
+                p_odds = 1
+                s_odds = 1
+                for i in range(len(daily_picks)):
+                    p_odds = p_odds*(daily_picks.pred_odds[i]/(daily_picks.pred_odds[i]-100))
+                    s_odds = s_odds*((daily_picks.odds[i])/((daily_picks.odds[i])-100))
+                p_odds = round(p_odds/(p_odds-1)*100)
+                s_odds = round(s_odds/(s_odds-1)*100)
+                if s_odds - p_odds >= 150 and sum(daily_picks.hr) == 0:
+                    value += round(round(value/2,2)/((s_odds)/-100),2)
+                elif s_odds - p_odds >= 150 and sum(daily_picks.hr) > 0:
+                    value = round(value/2,2)
+                else:
+                    value += round(sum(daily_picks.profit)/2,2)
+        else:
+            value += round(sum(picks.profit)/2,2)
+#%% 
+players = archive.groupby('pitcher').agg(
+    picks=('pick','sum'),
+    hr=('hr','mean'),
+    profit =('profit','sum')).reset_index().round(2)

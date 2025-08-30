@@ -5,7 +5,7 @@ Created on Tue Jun 10 11:47:42 2025
 @author: Brendan
 """
 
-def modify_pitchers(pitchers, old_pitch,players,ids):
+def modify_pitchers(pitchers, old_pitch):
     import pandas as pd
     from numpy import select,nan,inf
     from unidecode import unidecode
@@ -346,19 +346,7 @@ def modify_pitchers(pitchers, old_pitch,players,ids):
     per_pitch_short = per_pitch_short.reset_index(drop=True)
     per_pitch_short['pred_hr'] = result.predict(per_pitch_short[old_pitch.iloc[:,3:20].drop(columns='hr').columns]).round(2)
     per_pitch_short = per_pitch_short.drop(columns='year')
-    
-    players['team_id'] = players['team_id'].astype(int)
     per_pitch_short = per_pitch_short.merge(outings,how='inner',on=['playerid','player_name'])
-    players = players.merge(ids, on='team_id', how='left')
-    players = players[['person_id','Stadium','person_full_name']]
-    players = players.rename(columns={'person_id':'playerid','person_full_name':'player_name'})
-    players['playerid'] = players['playerid'].astype(int)
-    players = players.drop_duplicates().reset_index(drop=True)
-
-    per_pitch_short['player_name'] = per_pitch_short['player_name'].apply(unidecode)
-    per_pitch_short = per_pitch_short.merge(players,how='inner',on=['playerid','player_name'])
-    per_pitch_short = per_pitch_short.drop_duplicates()
-    per_pitch_short = per_pitch_short.reset_index(drop=True)
     
     """since we cannot aggregate things like velo, movement, and spin rate,
     as a pitcher's goal is to vary those things, we will not be getting splits
