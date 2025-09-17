@@ -7,13 +7,23 @@ Created on Mon Jul 28 22:20:37 2025
 #%%
 
 import pandas as pd
-archive = pd.read_csv('archives.csv')
+archive = pd.read_excel('archives.xlsx')
 all_ratings = pd.read_csv('ratings_since_july.csv')
 all_ratings['date'] = pd.to_datetime(all_ratings['date'], format='%Y/%m/%d').dt.date
 all_ratings['date'] = all_ratings['date'].astype(str)
 all_ratings = all_ratings.append(archive).drop_duplicates().reset_index(drop=True)
 all_picks = all_ratings.query('pick == 1')
 sum(all_ratings.profit)/(len(all_picks)*10)
+#%%
+import pandas as pd
+from itertools import product
+import numpy as np
+archive = pd.read_excel('archives.xlsx')
+archive.pred_odds = (((archive.pred_odds)/(archive.pred_odds-100))*100).round(1)
+archive['diff'] = archive.sb_no_hr-archive.pred_odds
+dates = list(archive.date.unique())
+#dates = dates[8:]
+archive = archive.query('date == @dates')
 def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount=10):
     """
     Backtest different threshold combinations for sports betting picks on UNDER bets.
@@ -31,10 +41,10 @@ def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_a
     
     # Default thresholds if not provided
     if diff_thresholds is None:
-        diff_thresholds = [-10000,0, 25, 50, 75, 100, 125, 150, 175, 200, 250, 300]
+        diff_thresholds = [-10000, 0, -1, -1.5, -2, -2.5, -3, -4, -5,-6,-7,-8,-9,-10]
     
     if pred_hr_thresholds is None:
-        pred_hr_thresholds = [90, 88, 86, 85, 84, 82, 80, 78, 75, 65, 60,0]
+        pred_hr_thresholds = [92, 90, 88, 86, 85, 84, 82, 80, 78, 75, 65, 60, 0]
     
     results = []
     
@@ -47,7 +57,7 @@ def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_a
         # Assign picks based on thresholds (1 if meets criteria, 0 if not)
         # For under bets: we want high under prediction (low HR probability) and positive diff
         df_copy['pick_calculated'] = np.where(
-            (df_copy['diff'] >= diff_thresh) & (df_copy['sb_no_hr'] >= pred_hr_thresh), 
+            (df_copy['diff'] <= diff_thresh) & (df_copy['sb_no_hr'] >= pred_hr_thresh), 
             1, 
             0
         )
@@ -137,12 +147,14 @@ results = backtest_thresholds(archive)
 #%% plot
 from itertools import product
 import numpy as np
+import pandas as pd
+archive = pd.read_excel('archives.xlsx')
 #results = backtest_thresholds(all_ratings)
 
 # roi plot
 import matplotlib.pyplot as plt
 
-
+all_picks = archive.query('pick == 1')
 # Assuming your dataframe is called 'df'
 # First, ensure date column is datetime
 #all_picks['date'] = pd.to_datetime(all_ratings['date'])
@@ -161,29 +173,29 @@ plt.figure(figsize=(12, 6))
 
 # For smoothing, we can use a rolling average or interpolation
 # Option 1: Simple rolling average (uncomment if desired)
-# window_size = 3
-# df_sorted['smoothed_profit'] = df_sorted['cumulative_profit'].rolling(window=window_size, center=True).mean()
-# plt.plot(df_sorted['date'], df_sorted['smoothed_profit'], linewidth=2, color='steelblue')
+window_size = 3
+df_sorted['smoothed_profit'] = df_sorted['cumulative_profit'].rolling(window=window_size, center=True).mean()
+plt.plot(df_sorted['date'], df_sorted['smoothed_profit'], linewidth=3, color='steelblue')
 
 # Option 2: Basic line without markers (cleaner look)
-plt.plot(df_sorted['date'], df_sorted['cumulative_roi'], 
-         linewidth=2.5, color='steelblue')
+#plt.plot(df_sorted['date'], df_sorted['cumulative_profit'], 
+ #        linewidth=2.5, color='steelblue')
 
-plt.title('Cumulative Profit Over Time', fontsize=16, fontweight='bold')
+plt.title('Cumulative Profit Over Time ($10 Wagers)', fontsize=16, fontweight='bold')
 plt.xlabel('Date', fontsize=12)
-plt.ylabel('ROI Over Time', fontsize=12)
+plt.ylabel('Profit', fontsize=12)
 #plt.ylim(bottom=0)
 plt.grid(True, alpha=0.3)
 
 # Format x-axis dates
+plt.xticks(plt.xticks()[0][::7])
 plt.xticks(rotation=45)
 plt.tight_layout()
 
 # Add horizontal line at break-even (y=0)
 #plt.axhline(y=0, color='red', linestyle='--', alpha=0.7, label='Break-even')
-
 # Add ROI text annotation
-plt.text(0.25, 0.87, 'ROI: 6.23%', transform=plt.gca().transAxes, 
+plt.text(0.25, 0.87, 'ROI: 5.1%', transform=plt.gca().transAxes, 
          fontsize=14, fontweight='bold', verticalalignment='top',
          bbox=dict(boxstyle='square', facecolor='lightblue', alpha=0.8))
 #%%
@@ -298,8 +310,8 @@ plt.show()
 
 calude = all_ratings[['sb_odds','pred_odds','HR']]
 #%%
-pred_odds_ranges = [(100, 350), (350, 450), (450, 550), (550, 650), (650, 750), 
-                    (750, 850), (850, 1000), (1000, 1200), (1200, 1500), (1500, 2000)]
+pred_odds_ranges = [(-100, -350), (-350, -450), (-450, -550), (-550, -650), (-650, -750), 
+                    (-750, -850), (-850, -1000), (-1000, -1200), (-1200, -1500), (-1500, -5000)]
 range_labels = [f"{r[0]}-{r[1]}" for r in pred_odds_ranges]
 
 actual_hr_rates = []
@@ -308,8 +320,8 @@ sb_hr_percentages = []
 sample_counts = []
 
 for min_odds, max_odds in pred_odds_ranges:
-    mask = (all_ratings['pred_odds'] >= min_odds) & (all_ratings['pred_odds'] < max_odds)
-    subset = all_ratings[mask]
+    mask = (archive['odds'] >= min_odds) & (archive['odds'] < max_odds)
+    subset = archive[mask]
     
     if len(subset) > 0:
         # Actual HR rate (what really happened) - percentage of 1's in HR column
@@ -359,7 +371,7 @@ for i, count in enumerate(sample_counts):
 plt.tight_layout()
 plt.show()
 
-# Print calibration summary
+#%% Print calibration summary
 print("MLB Home Run Model Calibration Summary:")
 print("Range\t\tActual%\tYour%\tSB%\tSample")
 for i, label in enumerate(range_labels):

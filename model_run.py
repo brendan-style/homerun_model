@@ -22,7 +22,7 @@ hitters = pd.read_csv('all_batters.csv')
 hitters = hitters.rename(columns={'last_name, first_name':'name'})
 hitters = hitters.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
 
-for i in range(0,len(hitters)):
+for i in range(571,len(hitters)):
     stats = bb.statcast_batter("2024-03-01","2025-11-01",hitters.iloc[:,1][i])
     stats = stats.query('game_type == "R"').dropna(subset='pitch_type')
     stats = stats[~stats['pitch_type'].isin(['SC','PO','CS','FA','EP',nan,'AB','FC','IN'])]
@@ -44,7 +44,7 @@ from numpy import nan
 pitchers = pd.read_csv('all_pitchers.csv')
 pitchers = pitchers.rename(columns={'last_name, first_name':'name'})
 pitchers = pitchers.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
-for i in range(0,len(pitchers)):
+for i in range(145,len(pitchers)):
     stats = bb.statcast_pitcher("2024-03-01","2025-11-01",pitchers.iloc[:,1][i])
     if stats.empty:
         continue
@@ -196,24 +196,26 @@ yesterday = yesterday.reset_index(drop=True)
 
 yesterday['profit'] = 0
 for i in range(len(yesterday)):
-    if yesterday.pick[i] == 0:
+    if yesterday.under_pick[i] == 0:
         continue
-    elif yesterday.pick[i] == 1 and yesterday.hr[i] == 1:
+    elif yesterday.under_pick[i] == 1 and yesterday.hr[i] == 1:
         yesterday.profit[i] = -10
     else:
-        yesterday.profit[i] = round(10/((yesterday.odds[i])/-100),2)
-archive = pd.read_csv('archives.csv')
+        yesterday.profit[i] = round(((100/yesterday.Under[i])/10)-10,2)
+archive = pd.read_excel('new_archive.xlsx')
 archive = archive.append(yesterday)
-archive.to_csv('archives.csv',index=False)
+archive.to_excel('new_archive.xlsx',index=False)
 del yesterday, name, date, stats, i
 
+sum(archive.profit)/(sum(archive.under_pick)*10)
 #%% rosters using r code
 
 """
 next we have to pull every team's roster for the day. Unfortunately, this can 
 only be done with baseballr to my knowledge, so with the help of Claude, I
 imported my r code for pulling rosters and put it into python."""
-
+import pandas as pd
+archive = pd.read_excel('archives.xlsx')
 import subprocess
 import tempfile
 import os
@@ -608,16 +610,24 @@ for i in range(1,len(all_odds)):
 split_df[['MGM','ESPN']] = all_odds[['MGM','ESPN']]
 try: split_df = split_df.drop(columns=['0','1','2','3','4','5'])
 except KeyError: split_df = split_df.drop(columns=['0','1','2','3','4'])
-split_df = split_df.query('bet == "Under" and amount == "0.5"')
+split_df = split_df.query('amount == "0.5"')
 
 split_df = split_df.dropna(subset=['MGM','ESPN'],how='all')
-split_df = split_df[['player','MGM','ESPN']]
-split_df = split_df.sort_values(by='MGM',ascending=False)
-split_df = split_df.drop_duplicates(subset='player',keep='first')
-split_df['player'] = split_df['player'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
-lineups = lineups.merge(split_df,on='player')
+split_df = split_df[['player','bet','MGM','ESPN']]
+melted = split_df.melt(id_vars=['player', 'bet'], value_vars=['MGM', 'ESPN'], var_name='book', value_name='odds')
+max_odds = melted.groupby(['player', 'bet'])['odds'].max().reset_index()
+
+max_books = melted.loc[melted.groupby(['player', 'bet'])['odds'].idxmax()][['player', 'bet', 'book']].rename(columns={'book': 'best_book'})
+
+result = max_odds.pivot(index='player', columns='bet', values='odds').reset_index()
+book_result = max_books.pivot(index='player', columns='bet', values='best_book').reset_index()
+book_result = book_result.rename(columns={'Over': 'over_book', 'Under': 'under_book'})
+result = result.merge(book_result, on='player')
+result = result.drop_duplicates(subset='player',keep='first')
+result['player'] = result['player'].apply(unidecode).str.replace(' Jr.', '', regex=True, case=False)
+lineups = lineups.merge(result,on='player')
 lineups = lineups.query('rating != 0').reset_index(drop=True)
-del split_df,all_odds,i
+del split_df,all_odds,i,result,book_result,max_odds,melted
 
 
 end = datetime.now()
@@ -632,18 +642,17 @@ decimal point either above or below that will act as a modifier to the percentag
 
 For example, if the matchup rating was 10.0, that player would have a 28.6%, or
 +250, chance of hitting a home run, since 5 is double 10"""
-
-lineups['pred_odds'] = round(((100-round(lineups.rating/mean(archive.dropna().rating)*(sum(archive.hr)/len(archive)),3)*100)/(100-(100-round(lineups.rating/mean(archive.dropna().rating)*.144,3)*100)))*100)*-1
-lineups['book'] = lineups[['MGM', 'ESPN']].idxmax(axis=1)
-lineups['odds'] = lineups[['MGM', 'ESPN']].max(axis=1)
-lineups = lineups.drop(columns=['MGM','ESPN'])
-lineups['diff'] = lineups.odds-lineups.pred_odds
-
+from sklearn.linear_model import LogisticRegression
+X = archive.rating.dropna()
+y = archive.hr.drop([2991,2992,2993])
+result = LogisticRegression().fit(X.values.reshape(-1,1),y)
+pred = lineups.rating
+lineups[['pred_under','pred_over']] = (result.predict_proba(pred.values.reshape(-1,1))).round(3)
+lineups['Over'] = ((100/(lineups.Over+100))).round(3)
+lineups.Under = ((lineups.Under/(lineups.Under-100))).round(3)
+lineups['under_diff'] = lineups.pred_under-lineups.Under
+lineups['over_diff'] =lineups.pred_over-lineups.Over
         
-lineups['sb_no_hr'] = 0
-for i in range(len(lineups)):
-    value = lineups.odds[i]
-    lineups.sb_no_hr[i] = round(100*(value/(value-100)),1)
 
 
 
@@ -664,10 +673,10 @@ that need to be checked in order to bet a player's under:
     Using this criteria, we have a track record of 64-2, with an 8.1% ROI
 """
 
-lineups['pick'] = 0
+lineups[['under_pick','over_pick']] = 0
 for i in range(len(lineups)):
-    if lineups.sb_no_hr[i] >= 88.0 and lineups['diff'][i] >= 150:
-        lineups.pick[i] = 1
+    if lineups.Under[i] >= .840 and lineups['under_diff'][i] >= .025:
+        lineups.under_pick[i] = 1
     else:
         continue
 from datetime import date
@@ -676,30 +685,89 @@ lineups['date'] = date.today()
 lineups.to_csv('daily_lineups.csv',index=False)
 
 #%% Parlay Check
-picks = lineups.query('pick == 1')
-book_counts = picks['book'].value_counts()
+import pandas as pd
+from itertools import combinations
+lineups = pd.read_csv('daily_lineups.csv')
+picks = lineups.query('under_pick == 1')
+book_counts = picks['under_book'].value_counts()
 multi_book = book_counts[book_counts > 1].reset_index().rename(columns={'index':'sb'})
+    
 if not multi_book.empty:
     for book in list(multi_book.sb):
-        picks = picks.query('book == @book').reset_index(drop=True)
-        p_odds = 1
-        s_odds = 1
-        for i in range(len(picks)):
-            p_odds = p_odds*(picks.pred_odds[i]/(picks.pred_odds[i]-100))
-            s_odds = s_odds*((picks.pred_odds[i]+picks['diff'][i])/((picks.pred_odds[i]+picks['diff'][i])-100))
-        p_odds = round(p_odds/(p_odds-1)*100)
-        s_odds = round(s_odds/(s_odds-1)*100)
-        if s_odds - p_odds >= 150:
-            print(f'There is value in a parlay for the picks on {book}')
+        picks = lineups.query('under_book == @book and under_pick == 1').reset_index(drop=True)
+        if len(picks) > 3:
+            combos = [picks.iloc[list(combo)] for combo in combinations(range(len(picks)), 3)]
         else:
-            print(f'There is inadequate value in parlaying the picks on {book}')
+            combos = "n"
+        for q in range(len(combos)):
+            p_odds = 1
+            s_odds = 1
+            picks = combos[q].reset_index(drop=True)
+            for i in range(len(picks)):
+                p_odds = p_odds*(picks.pred_odds[i]/(picks.pred_odds[i]-100))
+                s_odds = s_odds*((picks.pred_odds[i]+picks['diff'][i])/((picks.pred_odds[i]+picks['diff'][i])-100))
+            p_odds = round(p_odds/(p_odds-1)*100)
+            s_odds = round(s_odds/(s_odds-1)*100)
+            if q == 0:
+                combo_3 = q
+                diff_3 = s_odds - p_odds
+            else:
+                if s_odds - p_odds > diff_3:
+                    combo_3 = q
+                    diff_3 = s_odds - p_odds
+                else:
+                    continue
+        else:
+            pass
+        picks = lineups.query('book == @book and pick == 1').reset_index(drop=True)
+        if len(picks) >= 4:
+            combos = [picks.iloc[list(combo)] for combo in combinations(range(len(picks)), 4)]
+        else:
+            combos = "n"
+        for q in range(len(combos)):
+            p_odds = 1
+            s_odds = 1
+            picks = combos[q].reset_index(drop=True)
+            for i in range(len(picks)):
+                p_odds = p_odds*(picks.pred_odds[i]/(picks.pred_odds[i]-100))
+                s_odds = s_odds*((picks.pred_odds[i]+picks['diff'][i])/((picks.pred_odds[i]+picks['diff'][i])-100))
+            p_odds = round(p_odds/(p_odds-1)*100)
+            s_odds = round(s_odds/(s_odds-1)*100)
+            if q == 0:
+                combo_4 = q
+                diff_4 = s_odds - p_odds
+            else:
+                if s_odds - p_odds > diff_3:
+                    combo_4 = q
+                    diff_4 = s_odds - p_odds
+                else:
+                    continue
+        else:
+            pass
+        picks = lineups.query('book == @book and pick == 1').reset_index(drop=True)
+        if len(picks) <= 3:
+            p_odds = round(pd.Series(picks.pred_under).product(),2)
+            s_odds = round(pd.Series(picks.Under).product(),2)
+            if p_odds - s_odds > 0.02:
+                print(f"there is an advantage in parlaying these picks")
+            else:
+                continue
 else:
     print('Not enough picks for a parlay')
+if diff_3 > 150:
+    print(f"the best 3-leg parlay of these options is combo {combo_3}, with an odds differential of {diff_3}")
+else:
+    print('There is no good 3-leg parlay')
+if diff_4 > 150:
+    print(f"the best 4-leg parlay of these options is combo {combo_4}, with an odds differential of {diff_4}")
+else:
+    print('There is no good 4-leg parlay')
 
 #%% Convert prior straight bets to parlay's to check for more value
 
 import pandas as pd
 archive = pd.read_csv('archives.csv')
+archive = archive.fillna(-2000)
 dates = list(archive.date.unique())
 parlay_prof = pd.DataFrame()
 for date in dates:
@@ -711,6 +779,17 @@ for date in dates:
     else:
         book_counts = picks['book'].value_counts()
         multi_book = book_counts[book_counts > 1].reset_index().rename(columns={'index':'sb'})
+        if multi_book.empty:
+            picks['parlay'] = 0
+            parlay_prof = parlay_prof.append(picks)
+            continue
+        elif len(book_counts) > 1:
+            book_remove = multi_book.iloc[0:,0][0]
+            other_picks = picks.query('book != @book_remove')
+            other_picks['parlay'] = 0
+            parlay_prof = parlay_prof.append(other_picks)
+        else:
+            pass
         for book in list(multi_book.sb):
             daily_picks = picks.query('book == @book').reset_index(drop=True)
             p_odds = 1
@@ -739,7 +818,8 @@ sum(archive.profit)
 #round(100*(-851/(-851-100)),1)
 #%% trying new betting method
 import pandas as pd
-archive = pd.read_csv('archives.csv')
+archive = pd.read_excel('archives.xlsx')
+archive = archive.fillna(-2000)
 dates = list(archive.date.unique())
 value = 10
 for date in dates:
@@ -770,8 +850,28 @@ for date in dates:
                     value += round(sum(daily_picks.profit)/2,2)
         else:
             value += round(sum(picks.profit)/2,2)
-#%% 
+#%% aggregate profits
 players = archive.groupby('pitcher').agg(
     picks=('pick','sum'),
     hr=('hr','mean'),
     profit =('profit','sum')).reset_index().round(2)
+
+#%% aggregate ratings
+import pandas as pd
+pitch_stats = pd.read_csv('pitch_stats.csv')
+names = pitch_stats[['player_name','playerid','bip','avg_bf']]
+names = names.drop_duplicates(subset=['player_name','playerid'], keep='first').reset_index(drop=True)
+names = names.query('avg_bf > 8').reset_index(drop=True)
+names['pred_hr'] = 0
+for i in range(len(names)):
+    name = names['playerid'][i]
+    player = pitch_stats.query('playerid == @name').reset_index().drop(columns='index')
+    total = 0
+    for q in range(len(player)):
+        total += player.pred_hr[q]*(player.bip[q]/sum(player.bip))
+    names.bip[i] = sum(player.bip)
+    names.pred_hr[i] = total.round(2)
+#
+total = 0
+for i in range(len(names)):
+    total += names.pred_hr[i] * (names.bip[i]/sum(names.bip))
