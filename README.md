@@ -39,7 +39,9 @@ Now that it can be seen that higher ratings do in fact correlate to higher home 
 While this plot does show that my model is closer to predicting the actual HR rate than the sportsbooks, it also shows that there is no range where my model overperforms them. Since I was looking at odds from DraftKings, and they only over overs on home runs, they can add in substantially more vig, since you cannot see both sides. I decided to instead pull odds from sites like MGM and ESPN, since those offer double-sided odds, and bet on the unders. The results went well enough that, later on, I also added in over. Thoguh my sample is still under 200 total picks, here is the breakdown of results thus far:
 
 Unders: 95-11, 4.2% ROI
+
 Overs: 7-42, 25.7% ROI
+
 Total: 102-53, 11.0% ROI
 
 Unfortunately, we cannot procur historical data at this time, we are left with data only since midway through 2025. The results are encouraging so far, but it must be noted that this is not quite enough data to call this model a success just yet.
