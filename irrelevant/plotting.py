@@ -18,7 +18,7 @@ sum(all_ratings.profit)/(len(all_picks)*10)
 import pandas as pd
 from itertools import product
 import numpy as np
-archive = pd.read_excel('archives.xlsx')
+archive = pd.read_excel('archive.xlsx')
 archive.pred_odds = (((archive.pred_odds)/(archive.pred_odds-100))*100).round(1)
 archive['diff'] = archive.sb_no_hr-archive.pred_odds
 dates = list(archive.date.unique())
@@ -154,13 +154,12 @@ archive = pd.read_excel('archives.xlsx')
 # roi plot
 import matplotlib.pyplot as plt
 
-all_picks = archive.query('pick == 1')
 # Assuming your dataframe is called 'df'
 # First, ensure date column is datetime
 #all_picks['date'] = pd.to_datetime(all_ratings['date'])
 
 # Sort by date to ensure proper time series
-df_sorted = all_picks.sort_values('date').copy()
+df_sorted = archive.sort_values('date').copy()
 
 # Calculate cumulative profit over time
 df_sorted['cumulative_profit'] = df_sorted['profit'].cumsum()
@@ -175,7 +174,7 @@ plt.figure(figsize=(12, 6))
 # Option 1: Simple rolling average (uncomment if desired)
 window_size = 3
 df_sorted['smoothed_profit'] = df_sorted['cumulative_profit'].rolling(window=window_size, center=True).mean()
-plt.plot(df_sorted['date'], df_sorted['smoothed_profit'], linewidth=3, color='steelblue')
+plt.plot(df_sorted['date'], df_sorted['cumulative_profit'], linewidth=3, color='steelblue')
 
 # Option 2: Basic line without markers (cleaner look)
 #plt.plot(df_sorted['date'], df_sorted['cumulative_profit'], 
@@ -192,10 +191,12 @@ plt.xticks(plt.xticks()[0][::7])
 plt.xticks(rotation=45)
 plt.tight_layout()
 
+first_over_date = df_sorted[df_sorted['over_pick'] == 1]['date'].min()
+plt.axvline(x=first_over_date, linestyle='--')
 # Add horizontal line at break-even (y=0)
 #plt.axhline(y=0, color='red', linestyle='--', alpha=0.7, label='Break-even')
 # Add ROI text annotation
-plt.text(0.25, 0.87, 'ROI: 5.1%', transform=plt.gca().transAxes, 
+plt.text(0.15, 0.87, 'ROI: 11.0%', transform=plt.gca().transAxes, 
          fontsize=14, fontweight='bold', verticalalignment='top',
          bbox=dict(boxstyle='square', facecolor='lightblue', alpha=0.8))
 #%%
