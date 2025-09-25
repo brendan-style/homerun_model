@@ -36,11 +36,16 @@ Now that it can be seen that higher ratings do in fact correlate to higher home 
 
 ![](./images/value_plot.png)
 
-While this plot does show that my model is closer to predicting the actual HR rate than the sportsbooks, it also shows that there is no range where my model overperforms them, due to the vig that the sportsbooks bake into their odds. Because of this edge, it would be nearly impossible to beat them in the overs game. I ran 99 different thresholds for betting critieria, and only 1 came back with a positive ev - at 0.7% ROI. 
+While this plot does show that my model is closer to predicting the actual HR rate than the sportsbooks, it also shows that there is no range where my model overperforms them. Since I was looking at odds from DraftKings, and they only over overs on home runs, they can add in substantially more vig, since you cannot see both sides. I decided to instead pull odds from sites like MGM and ESPN, since those offer double-sided odds, and bet on the unders. The results went well enough that, later on, I also added in over. Thoguh my sample is still under 200 total picks, here is the breakdown of results thus far:
 
-So instead, I decided to bet unders using their odds, since my model was closer to the actual HR rate. Trying this produced far better results - out of over 100 different criteria, the lowest ROI was 0.6%, and the highest was 9.7%. Though the sample size is still small, the highest ROI threshold only made 56 selections, I believe it is large enough to say that my model was effective.
+Unders: 95-11, 4.2% ROI
 
+Overs: 7-42, 25.7% ROI
 
-Here are the returns over this span based on a $10 wager for every bet, last updated 8/13/25
+Total: 102-53, 11.0% ROI
+
+Unfortunately, we cannot procur historical data at this time, we are left with data only since midway through 2025. The results are encouraging so far, but it must be noted that this is not quite enough data to call this model a success just yet.
 
 ![](./images/profit_plot.png)
+
+** The dotted line notes where we started tracking bets on home run overs as well.
