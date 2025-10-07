@@ -36,16 +36,16 @@ Now that it can be seen that higher ratings do in fact correlate to higher home 
 
 ![](./images/value_plot.png)
 
-While this plot does show that my model is closer to predicting the actual HR rate than the sportsbooks, it also shows that there is no range where my model overperforms them. Since I was looking at odds from DraftKings, and they only over overs on home runs, they can add in substantially more vig, since you cannot see both sides. I decided to instead pull odds from sites like MGM and ESPN, since those offer double-sided odds, and bet on the unders. The results went well enough that, later on, I also added in over. Thoguh my sample is still under 200 total picks, here is the breakdown of results thus far:
+While this plot does show that my model is closer to predicting the actual HR rate than the sportsbooks, it also shows that there is no range where my model overperforms them. Since I had originally pulled odds from sportsbooks such as Fanduel and DraftKings, who only offer over bets on home runs, they can hide substantially more vig in their odds. I decided to instead pull odds from sites like MGM and ESPN, since those offer double-sided odds, and bet on the unders. The results went well enough that, later on, I also added in over betting. Thoguh my sample is still under 200 total picks, here are the backtested results from August 6th, 2025 through the end of the season:
 
-Unders: 95-11, 4.2% ROI
+Unders: 113-13, 5.1% ROI
 
-Overs: 7-42, 25.7% ROI
+Overs: 9-37, 20.8% ROI
 
-Total: 102-53, 11.0% ROI
-
-Unfortunately, we cannot procur historical data at this time, we are left with data only since midway through 2025. The results are encouraging so far, but it must be noted that this is not quite enough data to call this model a success just yet.
+Total: 122-50, 9.2% ROI
 
 ![](./images/profit_plot.png)
 
-** The dotted line notes where we started tracking bets on home run overs as well.
+### Future Work
+
+These 172 backtested selections are far from enough data to call the model a success. For one thing, it is a small sample size (particularly on the overs side), but backtesting in general cannot be used to show that the model will work in the future. Though historical home run odds are very difficult to find, I should be able to get data at least from all of the 2025 season, if not prior to that, in a few weeks. Until then, this data is really nothing more than promising.
