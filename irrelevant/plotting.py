@@ -74,7 +74,7 @@ plt.axvline(x=first_over_date, linestyle='--',label='Overs Introduced')
 plt.axhline(y=0, color='red', linestyle='--', alpha=0.7, label='Break-even')
 plt.legend()
 # Add ROI text annotation
-plt.text(0.34, 0.7, 'ROI: 9.2%', transform=plt.gca().transAxes, 
+plt.text(0.05, 0.85, 'ROI: 9.2%', transform=plt.gca().transAxes, 
          fontsize=14, fontweight='bold', verticalalignment='top',
          bbox=dict(boxstyle='square', facecolor='lightblue', alpha=0.8))
 #%%
