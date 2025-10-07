@@ -44,7 +44,7 @@ from numpy import nan
 pitchers = pd.read_csv('all_pitchers.csv')
 pitchers = pitchers.rename(columns={'last_name, first_name':'name'})
 pitchers = pitchers.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
-for i in range(0,len(pitchers)):
+for i in range(675,len(pitchers)):
     stats = bb.statcast_pitcher("2024-03-01","2025-11-01",pitchers.iloc[:,1][i])
     if stats.empty:
         continue
@@ -206,10 +206,9 @@ for i in range(len(yesterday)):
         yesterday.profit[i] = (round(((100/yesterday.Under[i])/10)-10,2)*yesterday.under_pick[i])+(round(((100/yesterday.Over[i])/10)-10,2)*yesterday.over_pick[i])
 archive = pd.read_excel('archive.xlsx')
 archive = archive.append(yesterday)
-archive.to_excel('new_archive.xlsx',index=False)
+archive.to_excel('archive.xlsx',index=False)
 del yesterday, name, date, stats, i
 
-sum(archive.profit)/(sum(archive.under_pick)*10)
 #%% rosters using r code
 """
 next we have to pull every team's roster for the day. Unfortunately, this can 
@@ -468,7 +467,7 @@ for i in range(0,len(lineups)):
 
     bf_mean = pitch.avg_bf[0]
     bf_std = pitch.std_bf[0]
-    if bf_std != bf_std:
+    if bf_std != bf_std or bf_std == 0:
         bf_std = round(mean(pitch_stats.query('avg_bf >= 10.0')['std_bf'].dropna()),2)
     else:
         pass
@@ -647,14 +646,14 @@ from sklearn.linear_model import LogisticRegression
 X = archive.rating.dropna()
 y = archive.hr.drop([2991,2992,2993])
 result = LogisticRegression().fit(X.values.reshape(-1,1),y)
-pred = lineups.rating
-lineups[['pred_under','pred_over']] = (result.predict_proba(pred.values.reshape(-1,1))).round(3)
+pred = archive.rating
+archive[['pred_under','pred_over']] = (result.predict_proba(pred.values.reshape(-1,1))).round(3)
 lineups.Over = ((100/(lineups.Over+100))).round(3)
 lineups.Under = ((lineups.Under/(lineups.Under-100))).round(3)
 lineups['under_diff'] = lineups.pred_under-lineups.Under
 lineups['over_diff'] =lineups.pred_over-lineups.Over
         
-
+del bullpen_stats,hit_stats,ids,max_books,pitch_stats,players,pred,result,X,y
 
 
 """
@@ -678,7 +677,7 @@ lineups[['under_pick','over_pick']] = 0
 for i in range(len(lineups)):
     if lineups.Under[i] >= .820 and lineups['under_diff'][i] >= .035:
         lineups.under_pick[i] = 1
-    elif lineups.Over[i] >= .080 and lineups['over_diff'][i] >= .055:
+    elif lineups.Over[i] >= .120 and lineups['over_diff'][i] >= .04:
         lineups.over_pick[i] = 1
         continue
 from datetime import date

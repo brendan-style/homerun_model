@@ -4,176 +4,53 @@ Created on Mon Jul 28 22:20:37 2025
 
 @author: Brendan
 """
-#%%
-
+#%% changing thresholds 
 import pandas as pd
-archive = pd.read_excel('archives.xlsx')
-all_ratings = pd.read_csv('ratings_since_july.csv')
-all_ratings['date'] = pd.to_datetime(all_ratings['date'], format='%Y/%m/%d').dt.date
-all_ratings['date'] = all_ratings['date'].astype(str)
-all_ratings = all_ratings.append(archive).drop_duplicates().reset_index(drop=True)
-all_picks = all_ratings.query('pick == 1')
-sum(all_ratings.profit)/(len(all_picks)*10)
-#%%
-import pandas as pd
-from itertools import product
-import numpy as np
 archive = pd.read_excel('archive.xlsx')
-archive.pred_odds = (((archive.pred_odds)/(archive.pred_odds-100))*100).round(1)
-archive['diff'] = archive.sb_no_hr-archive.pred_odds
-dates = list(archive.date.unique())
-#dates = dates[8:]
-archive = archive.query('date == @dates')
-def backtest_thresholds(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount=10):
-    """
-    Backtest different threshold combinations for sports betting picks on UNDER bets.
-    Bets that players will NOT hit home runs.
-    
-    Parameters:
-    df: DataFrame with columns ['diff', 'pred_odds', 'hr', 'odds']
-    diff_thresholds: list of diff thresholds to test
-    pred_hr_thresholds: list of sb_no_hr thresholds to test (as percentages)
-    bet_amount: amount wagered per bet (default 10)
-    
-    Returns:
-    DataFrame with results for each threshold combination
-    """
-    
-    # Default thresholds if not provided
-    if diff_thresholds is None:
-        diff_thresholds = [-10000, 0, -1, -1.5, -2, -2.5, -3, -4, -5,-6,-7,-8,-9,-10]
-    
-    if pred_hr_thresholds is None:
-        pred_hr_thresholds = [92, 90, 88, 86, 85, 84, 82, 80, 78, 75, 65, 60, 0]
-    
-    results = []
-    
-    # Test each combination of thresholds
-    for diff_thresh, pred_hr_thresh in product(diff_thresholds, pred_hr_thresholds):
-        
-        # Create a copy of the dataframe to work with
-        df_copy = df.copy()
-        
-        # Assign picks based on thresholds (1 if meets criteria, 0 if not)
-        # For under bets: we want high under prediction (low HR probability) and positive diff
-        df_copy['pick_calculated'] = np.where(
-            (df_copy['diff'] <= diff_thresh) & (df_copy['sb_no_hr'] >= pred_hr_thresh), 
-            1, 
-            0
-        )
-        
-        # Calculate profit for each row based on picks
-        df_copy['calculated_profit'] = 0.0
-        
-        for idx in df_copy.index:
-            if df_copy.loc[idx, 'pick_calculated'] == 1:
-                # Get the odds
-                odds = df_copy.loc[idx, 'odds']
-                
-                if pd.isna(odds):
-                    # Skip this pick if no odds available
-                    continue
-                
-                if df_copy.loc[idx, 'hr'] == 0:
-                    # WIN: Player did NOT hit a home run
-                    if odds > 0:
-                        profit = (odds / 100) * bet_amount
-                    else:
-                        profit = (100 / abs(odds)) * bet_amount
-                    df_copy.loc[idx, 'calculated_profit'] = profit
-                else:
-                    # LOSS: Player hit a home run
-                    df_copy.loc[idx, 'calculated_profit'] = -bet_amount
-            else:
-                # No pick: no profit or loss
-                df_copy.loc[idx, 'calculated_profit'] = 0.0
-        
-        # Filter to only the picks made
-        picks_made = df_copy[df_copy['pick_calculated'] == 1].copy()
-        
-        if len(picks_made) == 0:
-            # No qualifying picks
-            results.append({
-                'diff_threshold': diff_thresh,
-                'pred_hr_threshold': pred_hr_thresh,
-                'num_picks': 0,
-                'wins': 0,
-                'losses': 0,
-                'win_rate': 0,
-                'total_profit': 0,
-                'total_wagered': 0,
-                'roi': 0,
-                'avg_profit_per_pick': 0,
-                'profit_per_day': 0
-            })
-            continue
-        
-        # Calculate metrics
-        num_picks = len(picks_made)
-        wins = (picks_made['hr'] == 0).sum()  # WIN when hr == 0 for under bets
-        losses = num_picks - wins
-        win_rate = (wins / num_picks) * 100 if num_picks > 0 else 0
-        
-        # Calculate profit using our calculated profits
-        total_profit = picks_made['calculated_profit'].sum()
-        total_wagered = num_picks * bet_amount
-        roi = (total_profit / total_wagered) * 100 if total_wagered > 0 else 0
-        avg_profit_per_pick = total_profit / num_picks if num_picks > 0 else 0
-        
-        # Calculate profit per day
-        unique_dates = picks_made['date'].nunique() if 'date' in picks_made.columns else 1
-        profit_per_day = total_profit / unique_dates if unique_dates > 0 else 0
-        
-        results.append({
-            'diff_threshold': diff_thresh,
-            'pred_hr_threshold': pred_hr_thresh,
-            'num_picks': num_picks,
-            'wins': wins,
-            'losses': losses,
-            'win_rate': round(win_rate, 2),
-            'total_profit': round(total_profit, 2),
-            'total_wagered': total_wagered,
-            'roi': round(roi, 2),
-            'avg_profit_per_pick': round(avg_profit_per_pick, 2),
-            'profit_per_day': round(profit_per_day, 2)
-        })
-    
-    # Convert to DataFrame and sort by ROI descending
-    results_df = pd.DataFrame(results)
-    results_df = results_df.sort_values('roi', ascending=False).reset_index(drop=True)
-    
-    return results_df
-results = backtest_thresholds(archive)
+archive[['under_pick','over_pick']] = 0
+for i in range(len(archive)):
+    if archive.Under[i] >= .820 and archive['under_diff'][i] >= .04:
+        archive.under_pick[i] = 1
+    elif archive.Over[i] >= .14 and archive['over_diff'][i] >= .025:
+        archive.over_pick[i] = 1
+        continue    
+archive['profit'] = 0
+for i in range(len(archive)):
+    if archive.under_pick[i] == 0 and archive.over_pick[i] == 0:
+        continue
+    elif archive.under_pick[i] == 1 and archive.hr[i] == 1:
+        archive.profit[i] = -10
+    elif archive.over_pick[i] == 1 and archive.hr[i] == 0:
+        archive.profit[i] = -10
+    elif archive.under_pick[i] == 1 and archive.hr[i] == 0:
+        archive.profit[i] = (round(((100/archive.Under[i])/10)-10,2))
+    else:
+        archive.profit[i] = (round(((100/archive.Over[i])/10)-10,2))
 #%% plot
+# unders: 113-13, 5.1% ROI
+# overs: 9-37, 20.8% ROI
+# overall: 122-50, 9.2% ROI 
+
 from itertools import product
 import numpy as np
 import pandas as pd
-archive = pd.read_excel('archives.xlsx')
+archive = pd.read_excel('archive.xlsx')
 #results = backtest_thresholds(all_ratings)
 
 # roi plot
 import matplotlib.pyplot as plt
 
-# Assuming your dataframe is called 'df'
-# First, ensure date column is datetime
-#all_picks['date'] = pd.to_datetime(all_ratings['date'])
-
-# Sort by date to ensure proper time series
 df_sorted = archive.sort_values('date').copy()
-
+df_sorted = df_sorted.groupby('date').agg(profit=('profit','sum'),over_picks=('over_pick','sum'),under_picks=('under_pick','sum')).reset_index()
 # Calculate cumulative profit over time
 df_sorted['cumulative_profit'] = df_sorted['profit'].cumsum()
-df_sorted['rolling_roi_10'] = (df_sorted['profit'].rolling(window=10).sum() / 100) * 100
-df_sorted['investment'] = 10
-df_sorted['cumulative_roi'] = (df_sorted['cumulative_profit'] / df_sorted['investment'].cumsum()) * 100
-
 # Create the plot
 plt.figure(figsize=(12, 6))
 
 # For smoothing, we can use a rolling average or interpolation
 # Option 1: Simple rolling average (uncomment if desired)
 window_size = 3
-df_sorted['smoothed_profit'] = df_sorted['cumulative_profit'].rolling(window=window_size, center=True).mean()
+#df_sorted['smoothed_profit'] = df_sorted['cumulative_profit'].rolling(window=window_size, center=True).mean()
 plt.plot(df_sorted['date'], df_sorted['cumulative_profit'], linewidth=3, color='steelblue')
 
 # Option 2: Basic line without markers (cleaner look)
@@ -191,12 +68,13 @@ plt.xticks(plt.xticks()[0][::7])
 plt.xticks(rotation=45)
 plt.tight_layout()
 
-first_over_date = df_sorted[df_sorted['over_pick'] == 1]['date'].min()
-plt.axvline(x=first_over_date, linestyle='--')
+first_over_date = df_sorted[df_sorted['over_picks'] == 1]['date'].min()
+plt.axvline(x=first_over_date, linestyle='--',label='Overs Introduced')
 # Add horizontal line at break-even (y=0)
-#plt.axhline(y=0, color='red', linestyle='--', alpha=0.7, label='Break-even')
+plt.axhline(y=0, color='red', linestyle='--', alpha=0.7, label='Break-even')
+plt.legend()
 # Add ROI text annotation
-plt.text(0.15, 0.87, 'ROI: 11.0%', transform=plt.gca().transAxes, 
+plt.text(0.34, 0.7, 'ROI: 9.2%', transform=plt.gca().transAxes, 
          fontsize=14, fontweight='bold', verticalalignment='top',
          bbox=dict(boxstyle='square', facecolor='lightblue', alpha=0.8))
 #%%
