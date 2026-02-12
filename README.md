@@ -1,16 +1,16 @@
 # Using ML to Find Value in HR Betting Markets
 
-Over the past few years, the market for sports betting has skyrocketed, from around $13b wagered in 2019 to $113b wagered in 2023. One of the more popular bets that sportbooks's receive is bets on home run props, and due to the relative rarity of home runs, these types of bets usually end up being one of the best moneymakers. For my senior year capstone project, I thought it would be a fun task to create a model that aims to find value in the market that can beat the sportsbooks in the long-term.
+Over the past few years, the market for sports betting has skyrocketed, from around $13b wagered in 2019 to $113b wagered in 2023. One of the more popular bets that sportbooks's receive is bets on home run props, and due to the relative rarity of home runs, these types of bets usually end up making a lot of money for the sportsbooks. For my senior year capstone project, I thought it would be a fun task to create a model that aims to find value in the market consistently enough to beat the sportsbooks in the long-run.
 
 ## Data
 
-The data for this project was obtaine using the Python library PyBaseball, which I used to obtain data on over 6.5 million pitches from 2015-2025. For the stats I collected, I mainly used "Statcast" stats, so-called because they first became available in 2015 with the inception of Statcast. These stat's include things like average exit velocity, xwOBACON, barrel rate, etc. Since these stats contain very little context regarding the players batted ball distribution and plate discipline, I also included some non-Statcast data, such as groundball to flyball ratio, line drive rate, swing rate, chase rate, and whiff rate.
+The data for this project was obtaine using the Python library PyBaseball, which I used to obtain data on over 6.5 million pitches from 2021-2025. For the stats I collected, I mainly used "Statcast" stats, so-called because they first became available in 2015 with the inception of Statcast. These stat's include things like average exit velocity, xwOBACON, barrel rate, etc. Since these stats contain very little context regarding the players batted ball distribution and plate discipline, I also included some non-Statcast data, such as groundball to flyball ratio, line drive rate, swing rate, chase rate, and whiff rate.
 
-On the pitcher's side, I also included stats regarding their pitch and release point data. These include spin rate, velocity, release extension, and movement. While these are unlikely to have a massive impact on home runs allowed, their inclusion was important because these are the stats that a pitcher has the most control over.
+On the pitcher's side, on top of the batters stats, I also included stats regarding their pitch and release point data. These include spin rate, velocity, release extension, and movement. While these are unlikely to have a massive impact on home runs allowed, their inclusion was important because these are the stats that a pitcher has the most control over.
 
 ## Model Coefficients and Ratings:
 
-Originally, I attempted to utilize logistic regression, gradient boosting, and random forrest models to predict which matchup would result in a home run. However, due to the rarity of a home run occuring, all 109k matchups I predicted resulted in a 0. Realizing that a classification model wouldn't work, I pivoted to predicting a continuous variable, specifically, the home run rate relative to the league average. 
+Originally, I attempted to utilize logistic regression, gradient boosting, and random forrest models to predict which matchup would result in a home run. However, due to the rarity of a home run, all 109k observations resulted in a 0. Realizing that a classification model wouldn't work, I pivoted to predicting a continuous variable, specifically, the home run rate (home runs per batted ball event) relative to the league average. 
 
 Since a lot of my stats will likely have some multicollinearity, I decided on using a LASSO regression model to reduce the effects of that as best I can. For the batters, this reduced the original 12 features down to 9, and reduced the pitching features from 16 to 8
 
@@ -22,30 +22,33 @@ Since a lot of my stats will likely have some multicollinearity, I decided on us
 
 ![](./images/pitcher_coefs.png)
 
-### Create Ratings
+### Create Odds
 
-After getting these ratings for each player, I then put the ratings through a series of operations and modifiers to create a final rating, including modifiers for both handedness and stadium, as well as starter and bullpen specific ratings, based on the expected plate apperance count for the starter-batter matchup, as well as the batter's expected total PA count
+After getting these ratings for each player, I then put the ratings through a series of operations and modifiers to create a final rating, including modifiers for both handedness and stadium, as well as unique ratings for the batter's matchup vs both the starting pitcher and the bullpen, based on the expected plate apperance count for the starter-batter matchup, as well as the batter's expected total PA count. I then used this overall rating, which is meaningless without context, to create an "under" and "over" rating. These ratings were then blended with the player's odds for an under and over respectively to give us our predicted odds for a home run.
 
 ## Model Results
 
-After finishing the ratings, I took a little over 2 weeks to acquire real-time data to publish results. The results you see are based on 2,649 observations acquired between July 3rd and July 21st, 2025.
+After predicting our own odds for 85k observations across the 2023-2025 seasons, I split them into train and test sets and found the most ideal blend of sportsbook vs model weighting, the proper amount of "advantage" the model saw in the bet, and the proper threshold. I tracked the total bet numbers and ROI for the training set here:
 
-![](./images/rolling_hr_rate.png)
+#### Unders
+339 Bets, 2.1% profit
 
-Now that it can be seen that higher ratings do in fact correlate to higher home run rates, I then tested the home run rates relative to actual, to see where my model might have value over the sportsbooks.
+#### Overs:
+197 Bets, 11.9% Profit
 
-![](./images/value_plot.png)
+Though the udnders bets are dealing with some pretty small margins, a profit is still a profit. I think took my test data set and ran the numbers using the same parameters:
 
-While this plot does show that my model is closer to predicting the actual HR rate than the sportsbooks, it also shows that there is no range where my model overperforms them. Since I had originally pulled odds from sportsbooks such as Fanduel and DraftKings, who only offer over bets on home runs, they can hide substantially more vig in their odds. I decided to instead pull odds from sites like MGM and ESPN, since those offer double-sided odds, and bet on the unders. The results went well enough that, later on, I also added in over betting. Thoguh my sample is still under 200 total picks, here are the backtested results from August 6th, 2025 through the end of the season:
+#### Unders
+520 Bets, 3.7% profit
 
-Unders: 113-13, 5.1% ROI
-
-Overs: 9-37, 20.8% ROI
-
-Total: 122-50, 9.2% ROI
+#### Overs:
+314 Bets, 7.1% Profit
 
 ![](./images/profit_plot.png)
 
+Very promising! Overall, the test set had 834 bets accross it's 51k observations, and produced an ROI north of 5%. Prorated for a full season, this would be somwhere in the range of 550-600 total bets, and at a 5.2% ROI, a projecte profit of 30 units! For reference the "unit" is whatever your average bet size is. so, if you bet $10 on every single bet for a full season, you would expect to make $300 overall. To double check reliability, I ran the numbers on a per-year basis for both unders and overs. Both were successful for 2 out of the 3 years in the sample, and in both cases, the year that did not match the success had the small sample. 
+
+
 ### Future Work
 
-These 172 backtested selections are far from enough data to call the model a success. For one thing, it is a small sample size (particularly on the overs side), but backtesting in general cannot be used to show that the model will work in the future. Though historical home run odds are very difficult to find, I should be able to get data at least from all of the 2025 season, if not prior to that, in a few weeks. Until then, this data is really nothing more than promising.
+Though these results are highly encouraging, I believe I have a lot more to work on. Though I beleive my method for determining a batter's "power rating" is of sound process, I cannot say the same for pitchers. As it currently stands, the features for pitchers contain stats that correlate with giving up home runs, and stats that are sticky year-over-year, but these two groups are mutually exclusive. In a future 2.0 version, I would have to spend some time to create a model similar to many Stuff+ models you may see on the internet, but just simply for home runs. Outside of that, things like weather/time of year and pulled fly-ball rate will also have to be added, as those have more recently come to my attention as stats that can have a significant impact on home runs. For now, I believe this is very encouraging, but can still improve in some big ways
