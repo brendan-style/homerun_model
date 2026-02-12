@@ -7,13 +7,12 @@ Created on Wed Sep 24 15:39:47 2025
 
 #%% testing unders
 import pandas as pd
-archive = pd.read_excel('archive.xlsx')
 from itertools import product
 import numpy as np
 def backtest_unders(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount=10):
     """
     Backtest different threshold combinations for sports betting picks on UNDER bets.
-    Bets that players will NOT hit home runs.
+    Bets that players will NOT hit home runs
     
     Parameters:
     df: DataFrame with columns ['diff', 'pred_odds', 'hr', 'odds']
@@ -27,7 +26,7 @@ def backtest_unders(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amoun
     
     # Default thresholds if not provided
     if diff_thresholds is None:
-        diff_thresholds = [.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
+        diff_thresholds = [.02,.025,.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
     
     if pred_hr_thresholds is None:
         pred_hr_thresholds = [.92, .90, .88, .86, .85, .84, .82, .80, .78, .75, .65, .60, .0]
@@ -44,7 +43,7 @@ def backtest_unders(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amoun
         # Assign picks based on thresholds (1 if meets criteria, 0 if not)
         # For under bets: we want high under prediction (low HR probability) and positive diff
         df_copy['pick_calculated'] = np.where(
-            (df_copy['under_diff'] >= diff_thresh) & (df_copy['Under'] >= pred_hr_thresh), 
+            (df_copy['under_diff'] >= diff_thresh) & (df_copy['under'] >= pred_hr_thresh), 
             1, 
             0
         )
@@ -55,7 +54,7 @@ def backtest_unders(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amoun
         for idx in df_copy.index:
             if df_copy.loc[idx, 'pick_calculated'] == 1:
                 # Get the odds
-                odds = df_copy.loc[idx, 'Under']
+                odds = df_copy.loc[idx, 'under']
                 
                 if pd.isna(odds):
                     # Skip this pick if no odds available
@@ -124,18 +123,17 @@ def backtest_unders(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amoun
     
     # Convert to DataFrame and sort by ROI descending
     results_df = pd.DataFrame(results)
-    results_df = results_df.sort_values('roi', ascending=False).reset_index(drop=True)
+    results_df = results_df.sort_values('total_profit', ascending=False).reset_index(drop=True)
     
     return results_df
-results_u = backtest_unders(archive)
-#%# testing overs
+
+#%% testing overs
 import pandas as pd
-archive = pd.read_excel('archive.xlsx')
 from itertools import product
 import numpy as np
 def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount=10):
     """
-    Backtest different threshold combinations for sports betting picks on UNDER bets.
+    Backtest different threshold combinations for sports betting picks on OVER bets.
     Bets that players will NOT hit home runs.
     
     Parameters:
@@ -150,10 +148,10 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
     
     # Default thresholds if not provided
     if diff_thresholds is None:
-        diff_thresholds = [.02,.025,.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
+        diff_thresholds = [.015,.02,.025,.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
     
     if pred_hr_thresholds is None:
-        pred_hr_thresholds = [.08, .1, .12, .14, .15, .16, .18, .2, .22, .25]
+        pred_hr_thresholds = [.06,.08, .1, .12, .14, .15, .16, .18, .2, .22, .25]
         #pred_hr_thresholds = [.06, .08, .1, .12, .14, .15, .16, 18, .2, .25]
     
     results = []
@@ -167,7 +165,7 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
         # Assign picks based on thresholds (1 if meets criteria, 0 if not)
         # For under bets: we want high under prediction (low HR probability) and positive diff
         df_copy['pick_calculated'] = np.where(
-            (df_copy['over_diff'] >= diff_thresh) & (df_copy['Over'] >= pred_hr_thresh), 
+            (df_copy['over_diff'] >= diff_thresh) & (df_copy['over'] >= pred_hr_thresh), 
             1, 
             0
         )
@@ -178,7 +176,7 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
         for idx in df_copy.index:
             if df_copy.loc[idx, 'pick_calculated'] == 1:
                 # Get the odds
-                odds = df_copy.loc[idx, 'Over']
+                odds = df_copy.loc[idx, 'over']
                 
                 if pd.isna(odds):
                     # Skip this pick if no odds available
@@ -186,7 +184,7 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
                 
                 if df_copy.loc[idx, 'hr'] == 1:
                     # WIN: Player did NOT hit a home run
-                    round(profit = (10/odds) - 10,2)
+                    profit = round((10/odds) - 10,2)
                     df_copy.loc[idx, 'calculated_profit'] = profit
                 else:
                     # LOSS: Player hit a home run
@@ -247,7 +245,10 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
     
     # Convert to DataFrame and sort by ROI descending
     results_df = pd.DataFrame(results)
-    results_df = results_df.sort_values('roi', ascending=False).reset_index(drop=True)
+    results_df = results_df.sort_values('total_profit', ascending=False).reset_index(drop=True)
     
     return results_df
-results = backtest_overs(archive)
+
+
+#%%
+

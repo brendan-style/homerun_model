@@ -5,14 +5,17 @@ Created on Fri Jun  6 16:54:09 2025
 @author: Brendan
 """
 #%%
-def modify_batters(batters,old_hits):
+def modify_batters(batters,old_hits,date):
     import pandas as pd
     from numpy import select,nan,inf
     from unidecode import unidecode
     import numpy as np
     from statistics import mean
     from math import floor, ceil
-    
+    bbe = pd.read_csv('bbe_weights.csv')
+    data_year = int(date[:4])-2
+    c_year = int(date[:4])
+    batters = batters.query('game_year >= @data_year and game_date <= @date')
     fbb = batters.query('in_play ==1')
     fbb = fbb.dropna(subset=['estimated_woba_using_speedangle'])
     
@@ -75,7 +78,7 @@ def modify_batters(batters,old_hits):
     
     
     # getting league averages to regress small sample sizes
-    
+    """
     league_sums= pd.DataFrame((grouped.groupby('game_year').agg({
         **{col: 'sum' for col in list(grouped.columns[4:16])}})).sum().reset_index()).T
     league_sums.columns = league_sums.loc['index']
@@ -104,8 +107,7 @@ def modify_batters(batters,old_hits):
     
     league_sums['max_ev'] = round(mean(grouped.query('bip >= 30').max_ev),2)
     league_sums.bip = 1
-    league_sums['pitch_count'] = round(1/0.176,1)
-        
+    league_sums['pitch_count'] = round(1/0.176,1) 
     player_sums= pd.DataFrame((grouped.groupby(['player_name','playerid']).agg({
         **{col: 'sum' for col in list(grouped.columns[4:16])}})).reset_index())
     
@@ -154,36 +156,21 @@ def modify_batters(batters,old_hits):
             else:
                 continue
     # now that we have per-pitch averages for the league, we will regress for players with under 30 bip/30 pitches seen
-
+    """
     
     grouped = grouped.drop(grouped.query('fly_ball == 0').index).reset_index(drop=True)
     grouped['gb/fb'] = (grouped['ground_ball']/grouped['fly_ball'])
     rates = grouped[['player_name','playerid','game_year','pitch_type','xwobacon','la','ev','max_ev','gb/fb',
                      'pitch_count','bip','swing']]
     rates[['whiff','hh','ld','barrel','weak','hr','swing%','chase%']] = 0
-    
-    
-    for i in range(0,len(grouped)):
-        if grouped['bip'][i] < 30:
-            bip = 30
-            pitch = grouped['pitch_count'][i] + round((bip-grouped['bip'][i])*5.8)
-            rates['whiff'][i] = round(grouped['whiff'][i]/grouped['swing'][i],3)*100
-            rates['hh'][i] = round(grouped['hh'][i]/bip,3)*100
-            rates['ld'][i] = round((grouped['line_drive'][i])/bip,3)*100
-            rates['hr'][i] = round((grouped['home_run'][i])/bip,3)*100
-            rates['barrel'][i] = round((grouped['barrels'][i])/bip,3)*100
-            rates['weak'][i] = round((grouped['poorly_hit'][i])/bip,3)*100
-            rates['swing%'][i] = round((grouped['swing'][i])/pitch,3)*100
-            rates['chase%'][i] = round((grouped['chase'][i])/bip,3)*100
-        else:    
-            rates['whiff'][i] = round(grouped['whiff'][i]/grouped['swing'][i],3)*100
-            rates['hh'][i] = round(grouped['hh'][i]/grouped['bip'][i],3)*100
-            rates['ld'][i] = round((grouped['line_drive'][i])/grouped['bip'][i],3)*100
-            rates['hr'][i] = round((grouped['home_run'][i])/grouped['bip'][i],3)*100
-            rates['barrel'][i] = round((grouped['barrels'][i])/grouped['bip'][i],3)*100
-            rates['weak'][i] = round((grouped['poorly_hit'][i])/grouped['bip'][i],3)*100
-            rates['swing%'][i] = round((grouped['swing'][i])/grouped['pitch_count'][i],3)*100
-            rates['chase%'][i] = round((grouped['chase'][i])/grouped['swing'][i],3)*100
+    rates['whiff'] = round(grouped['whiff']/grouped['swing'],3)*100
+    rates['hh'] = round(grouped['hh']/grouped['bip'],3)*100
+    rates['ld'] = round((grouped['line_drive'])/grouped['bip'],3)*100
+    rates['hr'] = round((grouped['home_run'])/grouped['bip'],3)*100
+    rates['barrel'] = round((grouped['barrels'])/grouped['bip'],3)*100
+    rates['weak'] = round((grouped['poorly_hit'])/grouped['bip'],3)*100
+    rates['swing%'] = round((grouped['swing'])/grouped['pitch_count'],3)*100
+    rates['chase%'] = round((grouped['chase'])/grouped['swing'],3)*100
             
     pitch_list = list(rates['pitch_type'].unique())
     rates = rates.reindex(columns=['player_name','playerid','game_year',
@@ -223,88 +210,103 @@ def modify_batters(batters,old_hits):
     result = LassoCV(cv=5, random_state=79, max_iter=10000)
     result = result.fit(X, y)
     
-    weighted = pd.DataFrame()
-    for i in range(0,len(names)):
+    per_pitch_short = pd.DataFrame()
+    thresholds = np.array([0,10, 25, 50, 75, 100,150,200])
+    for i in range(len(names)):
         name = names['playerid'][i]
         player = new_stats.query('playerid == @name').reset_index().drop(columns='index')
-        for q in range(0,len(player)):
-            for p in range(0,13):
-                year = player.game_year[q]
-                if p == 9:
-                    continue
+        pitch_list = list(player.pitch_type.unique())
+        for pitch in pitch_list:
+            subset = player.query('pitch_type == @pitch').sort_values(by='game_year',ascending=False).reset_index(drop=True)
+            subset['thresholds'] = 0
+            if subset.loc[0].bip < 10:
+                subset = subset.drop(0).reset_index(drop=True)
+            for q in range(len(subset)):
+                    samp = subset.bip[q]
+                    subset['thresholds'][q] = thresholds[np.abs(thresholds - samp).argmin()]
+                    if subset['thresholds'][q] == 0 and subset['game_year'][q] != c_year:
+                        subset = subset.drop(q)
+            subset = subset.reset_index(drop=True)
+            if len(subset) == 3:
+                tya = subset.thresholds[2]
+                pys = subset.thresholds[1]
+                psb = subset.thresholds[0]
+                bbe_subset = bbe.query('pre_split_bbe == @psb and prior_bbe == @pys and two_years_bbe == @tya')
+                bbe_mods = bbe_subset.iloc[:,:4].T.reset_index(drop=True)
+                bbe_mods.columns = bbe_mods.iloc[0]
+                bbe_mods = bbe_mods.drop(0).reset_index(drop=True)
+                subset.iloc[:,:13] = subset.iloc[:,:13].values*bbe_mods.values
+                stats = pd.DataFrame(round(subset.iloc[:,:13].sum(),2)).T
+            elif len(subset) == 2 and max(subset.game_year) != c_year:
+                tya = subset.thresholds[1]
+                pys = subset.thresholds[0]
+                bbe_subset = bbe.query('pre_split_bbe == 0 and prior_bbe == @pys and two_years_bbe == @tya')
+                bbe_mods = bbe_subset.iloc[:,:4].T.reset_index(drop=True)
+                bbe_mods.columns = bbe_mods.iloc[0]
+                bbe_mods = bbe_mods.drop([0,1]).reset_index(drop=True)
+                subset.iloc[:,:13] = subset.iloc[:,:13].values*bbe_mods.values
+                stats = pd.DataFrame(round(subset.iloc[:,:13].sum(),2)).T
+            elif len(subset) == 2 and max(subset.game_year) == c_year:
+                if min(subset.game_year) == data_year:
+                    tya = subset.thresholds[1]
+                    psb = subset.thresholds[0]
+                    bbe_subset = bbe.query('pre_split_bbe == @psb and two_years_bbe == @tya')
+                    bbe_subset = bbe_subset.groupby('stat').agg(
+                        ps=('pre_split','mean'),
+                        py=('prior_year','mean'),
+                        ty=('two_years','mean'))
+                    bbe_subset['ps_share'] = round(bbe_subset.ps/(bbe_subset.ps+bbe_subset.ty),2)
+                    bbe_subset['ty_share'] = 1-bbe_subset.ps_share
+                    bbe_subset.ps = bbe_subset.ps + (bbe_subset.py * bbe_subset.ps_share)
+                    bbe_subset.ty = bbe_subset.ty + (bbe_subset.py * bbe_subset.ty_share)
+                    bbe_subset = bbe_subset.drop(columns=['py','ty_share','ps_share'])
+                    bbe_mods = bbe_subset.iloc[:,:4].T.reset_index(drop=True)
+                    subset.iloc[:,:13] = subset.iloc[:,:13].values*bbe_mods.values
+                    stats = pd.DataFrame(round(subset.iloc[:,:13].sum(),2)).T
+                if min(subset.game_year) == (data_year+1):
+                    tya = subset.thresholds[1]
+                    psb = subset.thresholds[0]
+                    bbe_subset = bbe.query('pre_split_bbe == @psb and prior_bbe == @tya')
+                    bbe_subset = bbe_subset.groupby('stat').agg(
+                        ps=('pre_split','mean'),
+                        py=('prior_year','mean'),
+                        ty=('two_years','mean'))
+                    bbe_subset['ps_share'] = round(bbe_subset.ps/(bbe_subset.ps+bbe_subset.py),2)
+                    bbe_subset['ty_share'] = 1-bbe_subset.ps_share
+                    bbe_subset.ps = bbe_subset.ps + (bbe_subset.ty * bbe_subset.ps_share)
+                    bbe_subset.py = bbe_subset.py + (bbe_subset.ty * bbe_subset.ty_share)
+                    bbe_subset = bbe_subset.drop(columns=['ty','ty_share','ps_share'])
+                    bbe_mods = bbe_subset.iloc[:,:4].T.reset_index(drop=True)
+                    subset.iloc[:,:13] = subset.iloc[:,:13].values*bbe_mods.values
+                    stats = pd.DataFrame(round(subset.iloc[:,:13].sum(),2)).T
+            elif len(subset) == 1:
+                if subset.game_year[0] == c_year:
+                    bbes = subset.thresholds[0]
+                    bbe_subset = bbe.query('pre_split_bbe == @bbes')
+                    weight = round(mean(bbe_subset.pre_split),4)
+                elif subset.game_year[0] == (data_year+1):
+                    bbes = subset.thresholds[0]
+                    bbe_subset = bbe.query('prior_bbe == @bbes')
+                    weight = round(mean(bbe_subset.prior_year),4)
                 else:
-                    player.iloc[:,p][q] = round(player.iloc[:,p][q]*(player['pitch_count'][q]/sum(player[player['game_year'] == year]['pitch_count'])),5)
-        player = player.groupby(['player_name','game_year','playerid']).agg({
-            **{col: 'sum' for col in list(player.columns[:9])},
-            **{col: 'mean' for col in [player.columns[9]]},
-            **{col: 'sum' for col in list(player.columns[10:13])},
-            **{col: 'sum' for col in list(player.columns[17:])}}).reset_index()
-        if len(player['game_year'].unique()) == 2:
-            player = player.groupby(['player_name','playerid']).agg({
-                **{col: 'mean' for col in list(player.columns[3:16])},
-                **{col: 'sum' for col in player.columns[16:]}}).reset_index()
-        elif sum(player.bip) < 200 and sum(player.game_year) == 2025:
-            p_weight = round(sum(player.bip)/200,2)
-            player.iloc[:,3:16] = (player.iloc[:,3:16]*(0.4 + (0.35*p_weight)) + (1*(1-(0.4 + (0.35*p_weight)))))
-        else:
-            player.iloc[:,3:16] = (player.iloc[:,3:16]*0.75) + 0.25
-        player = round(player,2)
-        weighted = weighted.append(player)
-        weighted = weighted.reset_index(drop=True)
-        player = round(player,2)
-        weighted = weighted.append(player)
-    weighted = weighted.drop_duplicates().reset_index(drop=True)
-    weighted = weighted.drop(columns=['game_year','hr'])
-    weighted['pred_hr'] = result.predict(weighted[old_hits.iloc[:,3:16].drop(columns='hr').columns]).round(2)
-    
-    
-    
-    
-        
-    per_pitch_short = pd.DataFrame()
-    options = new_stats[['player_name','playerid','pitch_type','game_year','bip']]
-    options = options.drop_duplicates(subset=['player_name','playerid','pitch_type'], keep='first').reset_index(drop=True)
-    new_stats = new_stats.drop(columns='hr')
-    for i in range(0,len(options)):
-        bbe = options['bip'][i]
-        name = options['playerid'][i]
-        pitch_type = options['pitch_type'][i]
-        pitch = new_stats.query('playerid == @name and pitch_type == @pitch_type').reset_index(drop=True)
-        player = weighted.query('playerid == @name').reset_index(drop=True)
-        if len(pitch) > 1:
-        # Get BBE values for both years before grouping
-            bbe_2024 = pitch.query('game_year == 2024')['bip'].iloc[0] if len(pitch.query('game_year == 2024')) > 0 else 0
-            bbe_2025 = pitch.query('game_year == 2025')['bip'].iloc[0] if len(pitch.query('game_year == 2025')) > 0 else 0
-            
-            # Calculate weights based on BBE scenarios
-            weight_2025 = 0.67 + 0.23 * (bbe_2025 / (bbe_2024 + bbe_2025))       
-            weight_2024 = 1 - weight_2025
-            pitch_2024 = pitch.query('game_year == 2024').reset_index(drop=True)
-            pitch_2025 = pitch.query('game_year == 2025').reset_index(drop=True)
-            
-            for col_idx in range(12):
-                col_name = pitch.columns[col_idx]
-                if col_name not in ['player_name', 'playerid', 'pitch_type', 'game_year']:
-                    val_2024 = pitch_2024[col_name].iloc[0] if len(pitch_2024) > 0 else 0
-                    val_2025 = pitch_2025[col_name].iloc[0] if len(pitch_2025) > 0 else 0
-                    weighted_val = (val_2024 * weight_2024 + val_2025 * weight_2025).round(2)
-                    pitch.loc[0, col_name] = weighted_val
-            
-            pitch = pitch.iloc[:1].copy()
-            if sum(pitch_2025.pitch_count) >= 200:
-                for col in pitch.columns[20:]:
-                   pitch[col] = pitch_2025[col]
-            else:
-                for col in pitch.columns[20:]:
-                    pitch[col] = pitch_2024[col].sum() + pitch_2025[col].sum() if len(pitch_2024) > 0 and len(pitch_2025) > 0 else pitch[col]
-        else:
-            pass
-        per_pitch_short = per_pitch_short.append(pitch)
+                    bbes = subset.thresholds[0]
+                    bbe_subset = bbe.query('two_years_bbe == @bbes')
+                    weight = round(mean(bbe_subset.two_years),4)
+                avg_w = 1-weight
+                subset.iloc[:,:13] = ((subset.iloc[:,:13].values*weight)+(avg_w)).round(2)
+                stats = pd.DataFrame(round(subset.iloc[:,:13].sum(),2)).T
+            if subset.empty:
+                continue
+            stats[['player_name','playerid','pitch_type','bip']] = subset[['player_name','playerid','pitch_type','bip']].loc[0].values
+            per_pitch_short = per_pitch_short.append(stats)
+                
+                
     per_pitch_short = per_pitch_short.reset_index(drop=True)
-    per_pitch_short['pred_hr'] = result.predict(per_pitch_short[old_hits.iloc[:,3:16].drop(columns='hr').columns]).round(2)
-    per_pitch_short = per_pitch_short.drop(columns='game_year')
+    per_pitch_short['pred_hr'] = result.predict(per_pitch_short[old_hits.iloc[:,3:16].drop(columns='hr').columns]).round(2)    
     
     
+    
+
     """Now that we have all players stats, we must get their splits based on
     the handedness of the pitcher they're facing so that can be factored in
     
@@ -373,7 +375,7 @@ def modify_batters(batters,old_hits):
             pitch_avgs[col] = round((pitch_avgs[col]/pitch_avgs['bip'])*100,2)
     pitch_avgs = pitch_avgs.reset_index(drop=True)
     
-    
+    """
     # getting league averages to regress small sample sizes
     
     league_sums= pd.DataFrame((grouped.groupby(['stand','p_throws']).agg({
@@ -418,6 +420,7 @@ def modify_batters(batters,old_hits):
                 grouped.bip[i] = 30
         else:
             continue
+        """
     import numpy as np
     
     grouped = grouped.drop(grouped.query('fly_ball == 0').index).reset_index(drop=True)
@@ -426,15 +429,15 @@ def modify_batters(batters,old_hits):
                      'pitch_count','bip','swing']]
     rates[['whiff','hh','ld','barrel','weak','hr','swing%','chase%']] = 0
     #split_metrics[[averages.columns[[range(2,len(averages.columns))]]]] = 0
-    for i in range(0,len(grouped)):
-        rates['whiff'][i] = round(grouped['whiff'][i]/grouped['swing'][i],3)*100
-        rates['hh'][i] = round(grouped['hh'][i]/grouped['bip'][i],3)*100
-        rates['ld'][i] = round((grouped['line_drive'][i])/grouped['bip'][i],3)*100
-        rates['hr'][i] = round((grouped['home_run'][i])/grouped['bip'][i],3)*100
-        rates['barrel'][i] = round((grouped['barrels'][i])/grouped['bip'][i],3)*100
-        rates['weak'][i] = round((grouped['poorly_hit'][i])/grouped['bip'][i],3)*100
-        rates['swing%'][i] = round((grouped['swing'][i])/grouped['pitch_count'][i],3)*100
-        rates['chase%'][i] = round((grouped['chase'][i])/grouped['swing'][i],3)*100
+    rates[['whiff','hh','ld','barrel','weak','hr','swing%','chase%']] = 0
+    rates['whiff'] = round(grouped['whiff']/grouped['swing'],3)*100
+    rates['hh'] = round(grouped['hh']/grouped['bip'],3)*100
+    rates['ld'] = round((grouped['line_drive'])/grouped['bip'],3)*100
+    rates['hr'] = round((grouped['home_run'])/grouped['bip'],3)*100
+    rates['barrel'] = round((grouped['barrels'])/grouped['bip'],3)*100
+    rates['weak'] = round((grouped['poorly_hit'])/grouped['bip'],3)*100
+    rates['swing%'] = round((grouped['swing'])/grouped['pitch_count'],3)*100
+    rates['chase%'] = round((grouped['chase'])/grouped['swing'],3)*100
     
     rates = rates.reindex(columns=['player_name','playerid',
                                              'stand','p_throws','hh','barrel','weak',
@@ -463,28 +466,30 @@ def modify_batters(batters,old_hits):
     new_stats.iloc[:,:12] = new_stats.iloc[:,:12].astype(float).round(2)
         
     per_pitch_split = pd.DataFrame()
-    options = new_stats[['player_name','playerid','stand','p_throws','bip']]
+    options = new_stats[['player_name','playerid','stand','p_throws','bip']].sort_values(by='player_name')
     options = options.drop_duplicates(subset=['player_name','playerid','p_throws','stand'], keep='first').reset_index(drop=True)
     new_stats = new_stats.drop(columns='hr')
     
     for i in range(0,len(options)):
-        bbe = options['bip'][i]
+        bip = options['bip'][i]
         name = options['playerid'][i]
         throws = options['p_throws'][i]
         pitch = new_stats.query('playerid == @name and p_throws == @throws').reset_index(drop=True)
-        player = weighted.query('playerid == @name').reset_index(drop=True)
-        if bbe < 50:
-            base_weight = (50 - bbe) / 50
-            player_confidence = min(player.bip[0] / 200, 1.0)
+        player = per_pitch_short.query('playerid == @name').reset_index(drop=True)
+        if bip < 50:
+            base_weight = (50 - bip) / 50
+            play_stats = pd.DataFrame(player.iloc[:,:13].sum()/len(player)).T
+            play_stats['bip'] = sum(player.bip)
+            player_confidence = min(play_stats.bip[0] / 200, 1.0)
             player_weight = base_weight * (0.5 + 0.4 * player_confidence)
             league_weight = base_weight - player_weight
             for p in range(0,11):
-                pitch.iloc[:,p] = (pitch.iloc[:,p][0]*(bbe/30) + player.iloc[:,p+2][0]*(player_weight) + 1*(league_weight)).round(2)
+                pitch.iloc[:,p] = (pitch.iloc[:,p][0]*(bip/50) + (play_stats.iloc[:,p+2][0]*(player_weight) + (league_weight))).round(2)
         per_pitch_split = per_pitch_split.append(pitch)
         
     per_pitch_split = per_pitch_split.reset_index(drop=True)
     per_pitch_split['splits'] = per_pitch_split.apply(lambda row: 'plat_disadv' if row['stand'] == row['p_throws'] else 'plat_adv', axis=1)
-    per_pitch_split = per_pitch_split.drop_duplicates()
+    per_pitch_split = per_pitch_split.drop_duplicates().dropna()
     
     names['plat_disc'] = 0
     for i in range(0,len(names)):
@@ -499,7 +504,7 @@ def modify_batters(batters,old_hits):
         plat_diff = dis.iloc[:,:12]-adv.iloc[:,:12]
         plat_diff['pred_diff'] = result.predict(plat_diff[old_hits.iloc[:,3:16].drop(columns='hr').columns]).round(2)
         names['plat_disc'][i] = plat_diff['pred_diff'][0]
-        
+    
     per_pitch_short = per_pitch_short.merge(names,on=['player_name','playerid'])
 
     

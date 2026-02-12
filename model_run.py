@@ -19,19 +19,30 @@ import pandas as pd
 from numpy import nan
 
 hitters = pd.read_csv('all_batters.csv')
-hitters = hitters.rename(columns={'last_name, first_name':'name'})
-hitters = hitters.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
 
+hitters = hitters.rename(columns={'last_name, first_name':'name'}).sort_values(by='pa',ascending=False)
+names = hitters.groupby('player_id').agg(seasons =('name','count')).reset_index().query('seasons > 1')
+hitters = hitters[hitters['player_id'].isin(names['player_id'])].reset_index(drop=True)
+del names
+#hitters = hitters.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
 for i in range(0,len(hitters)):
-    stats = bb.statcast_batter("2024-03-01","2025-11-01",hitters.iloc[:,1][i])
+    year = hitters.year[i]
+    date_s = f'{year}-03-01'
+    date_f = f'{year}-11-01'
+    stats = bb.statcast_batter(date_s,date_f,hitters.iloc[:,1][i])
     stats = stats.query('game_type == "R"').dropna(subset='pitch_type')
-    stats = stats[~stats['pitch_type'].isin(['SC','PO','CS','FA','EP',nan,'AB','FC','IN'])]
-    stats = stats[['game_year','player_name','pitch_type','release_speed','events','description','stand','p_throws',
+    stats = stats[~stats['pitch_type'].isin(['SC','PO','CS','EP',nan,'AB','IN'])]
+    stats = stats[['game_year','game_date','player_name','pitch_type','release_speed','events','description','stand','p_throws',
              'bb_type','zone','launch_speed','spin_axis','launch_angle','release_spin_rate','estimated_woba_using_speedangle','hit_distance_sc',
              'launch_speed_angle','attack_angle','attack_direction','swing_path_tilt','age_bat','age_pit','bat_speed','swing_length','hit_location']]
     stats['playerid'] = hitters.iloc[:,1][i]
     if i == 0:
         pitches_b = stats
+    elif i%5 == 0:
+        pitches_b = pitches_b.append(stats)
+        pitches_b = pitches_b.reset_index().drop(columns='index').drop_duplicates()
+        pitches_b.to_csv('batters_2.csv',index=False)
+        print(f'MOST RECENT SAVE: {i}')
     else:
         pitches_b = pitches_b.append(stats)
 pitches_b = pitches_b.reset_index().drop(columns='index').drop_duplicates()
@@ -41,21 +52,42 @@ del stats, i
 import pybaseball as bb
 import pandas as pd
 from numpy import nan
-pitchers = pd.read_csv('all_pitchers.csv')
-pitchers = pitchers.rename(columns={'last_name, first_name':'name'})
-pitchers = pitchers.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
-for i in range(675,len(pitchers)):
-    stats = bb.statcast_pitcher("2024-03-01","2025-11-01",pitchers.iloc[:,1][i])
+from pandas.errors import ParserError
+
+pitchers = pd.read_csv('pitchers.csv')
+pitchers = pitchers[['playerid','year']].drop_duplicates().reset_index(drop=True)
+"""
+pitchers = pitchers.rename(columns={'last_name, first_name':'name'}).sort_values(by='pa',ascending=False)
+names = pitchers.groupby('player_id').agg(seasons =('name','count')).reset_index().query('seasons > 1')
+pitchers = pitchers[pitchers['player_id'].isin(names['player_id'])].reset_index(drop=True)
+
+del names
+"""
+#pitchers = pitchers.drop_duplicates(subset=['name','player_id'], keep='first').reset_index(drop=True)
+#pitches = pd.read_csv('pitchers_2.csv')
+for i in range(2402,len(pitchers)):
+    year = pitchers.year[i]
+    date_s = f'{year}-03-01'
+    date_f = f'{year}-11-01'
+    try: stats = bb.statcast_pitcher(date_s,date_f,pitchers.playerid[i])
+    except ParserError: stats = bb.statcast_pitcher(date_s,date_f,pitchers.playerid[i])
     if stats.empty:
         continue
     stats = stats.query('game_type == "R"').dropna(subset='pitch_type')
-    stats = stats[~stats['pitch_type'].isin(['SC','PO','CS','FA','EP',nan,'AB','FC','IN'])]
-    stats = stats[['game_year','game_date','player_name','pitch_type','release_speed','events','description','stand','p_throws','release_pos_z','release_pos_x','plate_x','plate_z',
+    stats = stats[~stats['pitch_type'].isin(['SC','PO','CS','EP',nan,'AB','IN'])]
+    stats = stats[['game_year','game_date','player_name','pitch_type','release_speed','events','description','stand','p_throws','release_pos_z','release_pos_x','pfx_x','pfx_z',
              'bb_type','zone','launch_speed','spin_axis','launch_angle','release_spin_rate','release_extension','estimated_woba_using_speedangle','hit_distance_sc','n_priorpa_thisgame_player_at_bat',
              'launch_speed_angle','attack_angle','attack_direction','swing_path_tilt','age_bat','age_pit','bat_speed','swing_length','at_bat_number','arm_angle','n_thruorder_pitcher','outs_when_up','inning','batter']]
     stats['playerid'] = pitchers.iloc[:,1][i]
     if i == 0: pitches = stats
     else: pitches = pitches.append(stats)
+    """
+    elif i%5 == 0:
+        pitches = pitches.append(stats)
+        pitches = pitches.reset_index(drop=True).drop_duplicates()
+        pitches.to_csv('pitchers2.csv',index=False)
+        #print(f'MOST RECENT SAVE: {i}')
+    """
     
 pitches = pitches.reset_index().drop(columns='index').drop_duplicates()
 pitches.to_csv('pitchers.csv',index=False)
@@ -76,7 +108,6 @@ from statistics import mean
 from math import floor, ceil
 pitchers = pd.read_csv('pitchers.csv')
 
-pitchers = pitchers.rename(columns={'game_year':'year'})
 # Removing bunts from the analysis, would screw up ev and la metrics
 
 pitchers = pitchers[~(pitchers['description'].str.contains('bunt', case=False))]
@@ -116,7 +147,7 @@ pitchers['home_run'] = (pitchers['events'] == 'home_run').astype(int)
 pitchers['hh'] = (pitchers['launch_speed'] >= 95).astype(int)
 pitchers['in_zone'] = (pitchers['zone'] < 10).astype(int)
 pitchers['chase'] = pitchers.apply(lambda row: 1 if row['swing'] == 1 and row['in_zone'] == 0 else 0, axis = 1)
-pitchers['plate_x'] = abs(pitchers.plate_x)
+pitchers['pfx_x'] = abs(pitchers.pfx_x)
 
 
 # batters
@@ -227,6 +258,11 @@ r_code = """
 library(baseballr)
 team_ids <- c(108:121, 133:147, 158)
 all_rosters <- lapply(team_ids, function(x) { roster <- try(mlb_rosters(team_id = x, season = 2025, roster_type = 'active'), silent = TRUE); if(!inherits(roster, "try-error")) { roster$team_id <- x; roster } })
+
+FOR HISTORICAL ROSTERS:
+dates <- seq(as.Date("2024-04-01"), as.Date("2024-04-08"), by = "week")
+all_rosters <- lapply(team_ids, function(x) { roster <- try(mlb_rosters(team_id = x, season = 2024, roster_type = 'active', date='2024-04-01'), silent = TRUE); if(!inherits(roster, "try-error")) { roster$team_id <- x; roster } })
+
 combined_rosters <- do.call(rbind, all_rosters[!sapply(all_rosters, is.null)])
 write.csv(combined_rosters, stdout(), row.names = FALSE)
 """
@@ -402,12 +438,12 @@ del g,p,pi,a_team,h_team,driver,driver_path,opts,url,x,status,pitcher,last_name,
 from statistics import mean
 from scipy import stats
 from math import floor,ceil
-from scipy import stats
 
 # average PA count for each lineups position
 pa_per_game = {1: 4.65,2: 4.55,3: 4.43,4: 4.33,5: 4.24,6: 4.13,7: 4.01,8: 3.90,9: 3.77}
+# mean is 4.22
 # modifiers based on predicted plate apperance totals
-pa_mod = {0:0,1:0.44,2:1.21,3:1.50,4:1.50,5:1.5}
+pa_mod = {0:0,1:0.44,2:1.21,3:1.36,4:1.50,5:1.5}
 lineups['rating'] = 0
 lineups['team'] = 'none'
 for i in range(0,len(lineups)):
@@ -689,7 +725,7 @@ import pandas as pd
 pitch_stats = pd.read_csv('pitch_stats.csv')
 names = pitch_stats[['player_name','playerid','bip','avg_bf']]
 names = names.drop_duplicates(subset=['player_name','playerid'], keep='first').reset_index(drop=True)
-names = names.query('avg_bf > 8').reset_index(drop=True)
+names = names.query('avg_bf > 15').reset_index(drop=True)
 names['pred_hr'] = 0
 for i in range(len(names)):
     name = names['playerid'][i]
@@ -703,3 +739,5 @@ for i in range(len(names)):
 total = 0
 for i in range(len(names)):
     total += names.pred_hr[i] * (names.bip[i]/sum(names.bip))
+
+names = names.query('bip >= 200')

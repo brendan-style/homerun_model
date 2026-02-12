@@ -34,16 +34,17 @@ for i in range(len(archive)):
 from itertools import product
 import numpy as np
 import pandas as pd
-archive = pd.read_excel('archive.xlsx')
+#archive = pd.read_excel('archive.xlsx')
 #results = backtest_thresholds(all_ratings)
 
 # roi plot
 import matplotlib.pyplot as plt
 
-df_sorted = archive.sort_values('date').copy()
+df_sorted = final_ratings_test.sort_values('date').copy()
 df_sorted = df_sorted.groupby('date').agg(profit=('profit','sum'),over_picks=('over_pick','sum'),under_picks=('under_pick','sum')).reset_index()
 # Calculate cumulative profit over time
 df_sorted['cumulative_profit'] = df_sorted['profit'].cumsum()
+df_sorted['cumulative_profit'] = df_sorted['cumulative_profit']/10
 # Create the plot
 plt.figure(figsize=(12, 6))
 
@@ -57,24 +58,25 @@ plt.plot(df_sorted['date'], df_sorted['cumulative_profit'], linewidth=3, color='
 #plt.plot(df_sorted['date'], df_sorted['cumulative_profit'], 
  #        linewidth=2.5, color='steelblue')
 
-plt.title('Cumulative Profit Over Time ($10 Wagers)', fontsize=16, fontweight='bold')
+plt.title('2023-25 Cumulative Profit For Test Data', fontsize=16, fontweight='bold')
 plt.xlabel('Date', fontsize=12)
-plt.ylabel('Profit', fontsize=12)
+plt.ylabel('Units', fontsize=12)
 #plt.ylim(bottom=0)
 plt.grid(True, alpha=0.3)
 
 # Format x-axis dates
-plt.xticks(plt.xticks()[0][::7])
+plt.xticks(plt.xticks()[0][::21])
 plt.xticks(rotation=45)
 plt.tight_layout()
 
-first_over_date = df_sorted[df_sorted['over_picks'] == 1]['date'].min()
-plt.axvline(x=first_over_date, linestyle='--',label='Overs Introduced')
 # Add horizontal line at break-even (y=0)
 plt.axhline(y=0, color='red', linestyle='--', alpha=0.7, label='Break-even')
 plt.legend()
 # Add ROI text annotation
-plt.text(0.05, 0.85, 'ROI: 9.2%', transform=plt.gca().transAxes, 
+plt.text(0.05, 0.85, 'Test Profit: 4.9%', transform=plt.gca().transAxes, 
+         fontsize=14, fontweight='bold', verticalalignment='top',
+         bbox=dict(boxstyle='square', facecolor='lightblue', alpha=0.8))
+plt.text(0.05, 0.75, 'Total Bets: 814', transform=plt.gca().transAxes, 
          fontsize=14, fontweight='bold', verticalalignment='top',
          bbox=dict(boxstyle='square', facecolor='lightblue', alpha=0.8))
 #%%
