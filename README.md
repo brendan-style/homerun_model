@@ -1,12 +1,12 @@
 # Using ML to Find Value in HR Betting Markets
 
-Over the past few years, the market for sports betting has skyrocketed, from around $13b wagered in 2019 to $113b wagered in 2023. One of the more popular bets that a sportbooks will receive is bets on home run props, and due to the relative rarity of home runs, these types of bets usually end up making a lot of money for the sportsbooks. For my senior year capstone project, I thought it would be a fun task to create a model that aims to find value in the market consistently enough to beat the sportsbooks in the long-run.
+Over the past few years, the market for sports betting has skyrocketed, from around $13b wagered in 2019 to $113b wagered in 2023. One of the more popular bets that a sportsbooks will receive is bets on home run props, and due to the relative rarity of home runs, these types of bets usually end up making a lot of money for the sportsbooks. For my senior year capstone project, I thought it would be a fun task to create a model that aims to find value in the market consistently enough to beat the sportsbooks in the long-run.
 
 ## Data
 
-The data for this project was obtained using the Python library PyBaseball, which I used to obtain data on over 6.5 million pitches from 2021-2025. For the stats I collected, I mainly used "Statcast" stats, so-called because they first became available in 2015 with the inception of Statcast. These stat's include things like average exit velocity, xwOBACON, barrel rate, etc. Since these stats contain very little context regarding the players batted ball distribution and plate discipline, I also included some non-Statcast data, such as groundball to flyball ratio, line drive rate, swing rate, chase rate, and whiff rate.
+The data for this project was obtained using the Python library PyBaseball, which I used to obtain data on over 6.5 million pitches from 2021-2025. For the stats I collected, I mainly used "Statcast" stats, so-called because they first became available in 2015 with the inception of Statcast. These stats include things like average exit velocity, xwOBACON, barrel rate, etc. Since these stats contain very little context regarding the players batted ball distribution and plate discipline, I also included some non-Statcast data, such as groundball to flyball ratio, line drive rate, swing rate, chase rate, and whiff rate.
 
-On the pitcher's side, on top of the batters stats, I also included stats regarding their pitch and release point data. These include spin rate, velocity, release extension, and movement. While these are unlikely to have a massive impact on home runs allowed, their inclusion was important because these are the stats that a pitcher has the most control over.
+On the pitchers side, on top of the batters stats, I also included stats regarding their pitch and release point data. These include spin rate, velocity, release extension, and movement. While these are unlikely to have a massive impact on home runs allowed, their inclusion was important because these are the stats that a pitcher has the most control over.
 
 ## Model Coefficients and Ratings:
 
@@ -46,7 +46,7 @@ Though the unders bets are dealing with some pretty small margins, a profit is s
 
 ![](./images/profit_plot.png)
 
-Very promising! Overall, the test set had 834 bets across it's 51k observations, and produced an ROI just south of 5%. Prorated for a full season, this would be somewhere in the range of 550-600 total bets, and at a 4.9% ROI, a projected profit of 30 units! For reference the "unit" is whatever your average bet size is. so, if you bet $10 on every single bet for a full season, you would expect to make $300 overall. To double check reliability, I ran the numbers on a per-year basis for both unders and overs. Both were successful for 2 out of the 3 years in the sample, and in both cases, the year that did not match the success had the small sample. 
+Very promising! Overall, the test set had 834 bets across its 51k observations, and produced an ROI just south of 5%. Prorated for a full season, this would be somewhere in the range of 550-600 total bets, and at a 4.9% ROI, a projected profit of 30 units! For reference the "unit" is whatever your average bet size is. so, if you bet $10 on every single bet for a full season, you would expect to make $300 overall. To double check reliability, I ran the numbers on a per-year basis for both unders and overs. Both were successful for 2 out of the 3 years in the sample, and in both cases, the year that did not match the success had the small sample. 
 
 
 ### Future Work
