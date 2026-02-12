@@ -36,7 +36,7 @@ After predicting our own odds for 85k observations across the 2023-2025 seasons,
 #### Overs:
 197 Bets, 11.9% Profit
 
-Though the udnders bets are dealing with some pretty small margins, a profit is still a profit. I think took my test data set and ran the numbers using the same parameters:
+Though the unders bets are dealing with some pretty small margins, a profit is still a profit. I then took my test data set and ran the numbers using the same parameters:
 
 #### Unders
 520 Bets, 3.7% profit
