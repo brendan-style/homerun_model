@@ -24,7 +24,7 @@ Since a lot of my stats will likely have some multi-collinearity, I decided on u
 
 ### Create Odds
 
-After getting these ratings for each player, I then put the ratings through a series of operations and modifiers to create a final rating, including modifiers for both handedness and stadium, as well as unique ratings for the batter's matchup vs both the starting pitcher and the bullpen, based on the expected plate appearance count for the starter-batter matchup, as well as the batter's expected total PA count. I then used this overall rating, which is meaningless without context, to create an "under" and "over" rating. These ratings were then blended with the player's odds for an under and over respectively to give us our predicted odds for a home run.
+After getting these ratings for each player, I then put the ratings through a series of operations and modifiers to create a final rating, including modifiers for both handedness and stadium, as well as unique ratings for the batter's matchup vs both the starting pitcher and the bullpen. These were based on the expected plate appearance count for the starter-batter matchup, as well as the batter's expected total PA count. I then used this overall rating to create an "under" and "over" rating. These ratings were then blended with a sportsbooks' posted odds for that player's under and over respectively to give us our model-predicted odds for a home run.
 
 ## Model Results
 
