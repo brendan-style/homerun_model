@@ -30,25 +30,18 @@ After getting these ratings for each player, I then put the ratings through a se
 
 After predicting our own odds for 85k observations across the 2023-2025 seasons, I split them into train and test sets and found the most ideal blend of sportsbook vs model weighting, the proper amount of "advantage" the model saw in the bet, and the proper threshold. I tracked the total bet numbers and ROI for the training set here:
 
-#### Unders
-339 Bets, 2.1% profit
-
-#### Overs:
-197 Bets, 11.9% Profit
-
-Though the unders bets are dealing with some pretty small margins, a profit is still a profit. I then took my test data set and ran the numbers using the same parameters:
 
 #### Unders
-520 Bets, 3.7% profit
+307 Bets, 3.1% profit
 
 #### Overs:
-314 Bets, 7.1% Profit
+318 Bets, 5.2% Profit
 
 ![](./images/profit_plot.png)
 
-Very promising! Overall, the test set had 834 bets across its 51k observations, and produced an ROI just south of 5%. Prorated for a full season, this would be somewhere in the range of 550-600 total bets, and at a 4.9% ROI, a projected profit of 30 units! For reference the "unit" is whatever your average bet size is. so, if you bet $10 on every single bet for a full season, you would expect to make $300 overall. To double check reliability, I ran the numbers on a per-year basis for both unders and overs. Both were successful for 2 out of the 3 years in the sample, and in both cases, the year that did not match the success had the small sample. 
+Very promising! Overall, the test set had 625 bets across its 35k observations, and produced an ROI of over 4%. It should be noted that the training data actually produced a worse result, overall posting a 3.1% ROI across 946 bets, so we might expect future results to be somewhere in between the two outcomes. Accounting for this, if we move forward with an estimate of 3.5% profit, prorated at around 675 bets per season, the expected return would be around 23-24 units. For reference the "unit" is whatever your average bet size is. so, if you bet $10 on every single bet for a full season, you would expect to make $230-240 overall. To double check reliability, I ran the numbers on a per-year basis for both unders and overs. Both were successful for 2 out of the 3 years in the sample, and in both cases, the year that did not match the success had the smallest sample. 
 
 
 ### Future Work
 
-Though these results are highly encouraging, I believe I have a lot more to work on. While I believe my method for determining a batter's "power rating" is of sound process, I cannot say the same for pitchers. As it currently stands, the features for pitchers contain stats that correlate with giving up home runs, and stats that are sticky year-over-year, but these two groups are mutually exclusive. In a future 2.0 version, I would have to spend some time to create a model similar to many Stuff+ models you may see on the internet, but just simply for home runs. Outside of that, things like weather/time of year and pulled fly-ball rate will also have to be added, as those have more recently come to my attention as stats that can have a significant impact on home runs. For now, I believe this is very encouraging, but can still improve in some big ways
+Though these results are highly encouraging, I believe I have a lot more to work on. While I believe my method for determining a batter's "power rating" is of sound process, I cannot say the same for pitchers. As it currently stands, the features for pitchers contain stats that correlate with giving up home runs, and stats that are sticky year-over-year, but these two groups are mutually exclusive. In a future 2.0 version, I would have to spend some time to create a model similar to many Stuff+ models you may see on the internet, but just simply for home runs. Outside of that, things like weather/time of year and pulled fly-ball rate will also have to be added, as those have more recently come to my attention as stats that can have a significant impact on home runs. For now, I believe this is very encouraging, but can still improve in some big ways.
