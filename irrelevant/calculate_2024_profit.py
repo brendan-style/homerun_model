@@ -416,7 +416,7 @@ best_over = pd.DataFrame()
 
 for i in range(10,100,5):
     start = datetime.now()
-    rating_weight = .5
+    rating_weight = i/100
     final_ratings['over_rating'] = round((final_ratings.rating*rating_weight) + (final_ratings.over*(1-rating_weight)),3)
     #final_ratings['under_rating'] = round((final_ratings.rating*rating_weight) + (final_ratings.under*(1-rating_weight)),3)
     final_ratings['year'] = pd.to_datetime(final_ratings['date']).dt.year
@@ -427,7 +427,7 @@ for i in range(10,100,5):
     result = LogisticRegression().fit(X_tr.values.reshape(-1,1),y_tr)
     result.coef_
     pred = final_ratings[['over_rating']]
-    final_ratings[['pred_under_2','pred_over']] = (result.predict_proba(pred.values.reshape(-1,1))).round(3)
+    final_ratings[['pred_under','pred_over']] = (result.predict_proba(pred.values.reshape(-1,1))).round(3)
     
     final_ratings['under_diff'] = final_ratings.pred_under-final_ratings.under
     final_ratings['over_diff'] =final_ratings.pred_over-final_ratings.over
@@ -460,7 +460,7 @@ best_under = pd.DataFrame()
 
 for i in range(10,95,5):
     start = datetime.now()
-    rating_weight = .15
+    rating_weight = i/100
     #final_ratings['over_rating'] = round((final_ratings.rating*rating_weight) + (final_ratings.over*(1-rating_weight)),3)
     final_ratings['under_rating'] = round((final_ratings.rating*rating_weight) + (final_ratings.under*(1-rating_weight)),3)
     final_ratings['year'] = pd.to_datetime(final_ratings['date']).dt.year
@@ -504,9 +504,10 @@ best_under['both_roi'] = (best_under.sum_profit/(best_under.sum_picks*10))*100
 best_under.to_csv('best_unders.csv',index=False)
 
 #%%
-final_ratings['over_rating'] = round((final_ratings.rating*.90) + (final_ratings.over*.10),3)
-final_ratings['under_rating'] = round((final_ratings.rating*.90) + (final_ratings.under*.10),3)
+final_ratings['over_rating'] = round((final_ratings.rating*.5) + (final_ratings.over*.50),3)
+final_ratings['under_rating'] = round((final_ratings.rating*.15) + (final_ratings.under*.85),3)
 final_ratings['month'] = pd.to_datetime(final_ratings['date']).dt.month
+final_ratings['year'] = pd.to_datetime(final_ratings['date']).dt.year
 X = final_ratings[['over_rating','under_rating']]
 y = final_ratings.hr
 # .reshape(-1,1)
@@ -556,8 +557,8 @@ best_over = best_over.append(both_over)
 #%%
 final_ratings_test[['under_pick','over_pick']] = 0
 for i in range(len(final_ratings_test)):
-    #if final_ratings_test['under_diff'][i] >= .045 and final_ratings_test.under[i] >= .84:
-      #  final_ratings_test.under_pick[i] = 1
+    if final_ratings_test['under_diff'][i] >= .045 and final_ratings_test.under[i] >= .84:
+        final_ratings_test.under_pick[i] = 1
     if final_ratings_test.over[i] >= .22 and final_ratings_test['over_diff'][i] >= .015:
         final_ratings_test.over_pick[i] = 1
     continue
@@ -577,6 +578,7 @@ for i in range(len(final_ratings_test)):
         final_ratings_test.profit[i] = (round(((100/final_ratings_test.under[i])/10)-10,2)*final_ratings_test.under_pick[i])+(round(((100/final_ratings_test.over[i])/10)-10,2)*final_ratings_test.over_pick[i])
 
 sum(final_ratings_test.profit)/((sum(final_ratings_test.over_pick)+sum(final_ratings_test.under_pick))/10)
+
 
 final_ratings.to_csv('historical_profit_calc.csv',index=False)
 # RECALC RATINGS - PRED_HR_ODDS
@@ -609,7 +611,10 @@ final_ratings_train[['under_pick','over_pick']] = 0
 for i in range(len(final_ratings_train)):
     if final_ratings_train.under[i] >= .84 and final_ratings_train['under_diff'][i] >= .045:
         final_ratings_train.under_pick[i] = 1
-    continue
+    elif final_ratings_train.over[i] >= .22 and final_ratings_train['over_diff'][i] >= .015:
+        final_ratings_train.over_pick[i] = 1
+    else:
+        continue
 
 sum(final_ratings_train.over_pick)
 sum(final_ratings_train.under_pick)
@@ -663,13 +668,13 @@ sum(final_ratings_test.profit)/((sum(final_ratings_test.over_pick)+sum(final_rat
 
 # OVERS
 """
-Rating Weight: 50%
-Diff: 1.5%
-Threshold: 22%
+Rating Weight: 25%
+Diff: 2%
+Threshold: 20%
 
-Validation Set(40%): 197 Picks, 11.9% Profit
-Test Set: 314 Picks, 7.07% Profit
-Total: 511 Picks, 8.94% Profit
+Validation Set(60%): 351 Picks, 10.52% Profit
+Test Set: 228 Picks, 4.81% Profit
+Total: 579 Picks, 8.27% Profit
 
 Breakdown by year:
     2023: 185 Picks, 8.70% Profit
@@ -696,7 +701,7 @@ Breakdown by year:
 # TOTALS
 """
 Overs:
-    Prorated 210-230 Picks per year, 8.9% profit
+    Prorated 220-230 Picks per year, 8.9% profit
 Unders:
     Prorated 345-370 Picks per year, 3.03% Profit
 

@@ -7,11 +7,11 @@ Created on Tue Jun 10 11:47:42 2025
 
 def modify_pitchers(pitchers, old_pitch,date):
     import pandas as pd
-    from numpy import select,nan,inf
+    from numpy import nan,inf
     from unidecode import unidecode
     import numpy as np
     from statistics import mean
-    from math import floor, ceil
+    from sklearn.linear_model import LassoCV,LinearRegression
     bbe = pd.read_csv('bbe_weights_pitchers.csv')
     data_year = int(date[:4])-2
     c_year = int(date[:4])
@@ -19,7 +19,7 @@ def modify_pitchers(pitchers, old_pitch,date):
     fbb = pitchers.query('in_play==1')
     fbb = fbb.dropna(subset=['estimated_woba_using_speedangle'])
     
-    # getting average bf and outs gotten for every starter
+    # getting average bf and outs gotten for every player to identiofy relievers and starters
     
     outings = pitchers.groupby(['player_name','playerid','batter','game_date','inning','outs_when_up','events']).agg(
         pitches=('batter','size'))
@@ -42,6 +42,7 @@ def modify_pitchers(pitchers, old_pitch,date):
     outings['outs'] += outings['last_event'].str.contains('double_play', na=False).astype(int) * 2
     outings['outs'] += (outings['last_event'].str.contains('out', na=False) | outings['last_event'].str.contains('sac', na=False)).astype(int) * 1
     outings = outings.drop(columns=['last_event'])
+    outings = (outings.sort_values(by='game_date', ascending=False).groupby(['playerid', 'player_name']).head(10))
     
     outings = outings.groupby(['player_name','playerid']).agg(
         avg_bf=('bf','mean'),
@@ -85,6 +86,7 @@ def modify_pitchers(pitchers, old_pitch,date):
     
     
     grouped = grouped.dropna()
+    grouped = grouped.query('bip >= 10')
     pitch_list = list(grouped.pitch_type.unique())
     pitch_avgs = grouped.groupby('pitch_type').agg({**{col: 'sum' for col in list(grouped.columns[6:21])}})
     pitch_avgs[['velo','spin_rate','x_move','z_move','extension','xwobacon','ev','la']] = 0
@@ -253,16 +255,8 @@ def modify_pitchers(pitchers, old_pitch,date):
     new_stats["player_name"] = [" ".join(n.split(", ")[::-1]) for n in new_stats["player_name"]]
     new_stats["player_name"] =new_stats["player_name"].apply(unidecode)
     
-    from sklearn.model_selection import train_test_split
-    from sklearn.linear_model import LassoCV
-    import numpy as np
-    old_pitch = pd.read_csv('old_pitch.csv')
-    X = old_pitch.iloc[:,3:20].drop(columns='hr')
-    y = old_pitch.hr
-    result = LassoCV(alphas=np.logspace(-3, 1, 20),cv=5, random_state=14, max_iter=10000)
-    result = result.fit(X, y)  
-    
-    
+        
+
     
     names = new_stats[['player_name','playerid']]
     names = names.drop_duplicates(subset=['player_name','playerid'], keep='first').reset_index(drop=True)
@@ -272,13 +266,11 @@ def modify_pitchers(pitchers, old_pitch,date):
         name = names['playerid'][i]
         player = new_stats.query('playerid == @name').reset_index().drop(columns='index')
         pitch_list = list(player.pitch_type.unique())
-        c_year = max(player.game_year)
+        max_year = max(player.game_year)
         for pitch in pitch_list:
             subset = player.query('pitch_type == @pitch').sort_values(by='game_year',ascending=False).reset_index(drop=True)
-            if sum(player.query('game_year == @c_year').pitch_count) > 150 and max(subset.game_year) != c_year:
+            if sum(player.query('game_year == @max_year').pitch_count) >= 150 and max(subset.game_year) != max_year:
                 continue
-            else:
-                pass
             subset['thresholds'] = 0
             if subset.loc[0].bip < 10:
                 subset = subset.drop(0).reset_index(drop=True)
@@ -293,20 +285,26 @@ def modify_pitchers(pitchers, old_pitch,date):
                 pys = subset.thresholds[1]
                 psb = subset.thresholds[0]
                 bbe_subset = bbe.query('pre_split_bbe == @psb and prior_bbe == @pys and two_years_bbe == @tya')
-                bbe_mods = bbe_subset.iloc[:,:4].T.reset_index(drop=True)
+                bbe_mods = bbe_subset.iloc[:,:5].T.reset_index(drop=True)
                 bbe_mods.columns = bbe_mods.iloc[0]
                 bbe_mods = bbe_mods.drop(0).reset_index(drop=True)
-                subset.iloc[:,:17] = subset.iloc[:,:17].values*bbe_mods.values
+                bbe_mods = bbe_mods[subset.iloc[:,:17].columns].reset_index(drop=True)
+                subset.iloc[:,:17] = subset.iloc[:,:17].values*bbe_mods.loc[0:2].values
                 stats = pd.DataFrame(round(subset.iloc[:,:17].sum(),2)).T
+                stats.iloc[:,:17] = stats.iloc[:,:17].values+bbe_mods.loc[3:].values
+                stats = stats.round(2)
             elif len(subset) == 2 and max(subset.game_year) != c_year:
                 tya = subset.thresholds[1]
                 pys = subset.thresholds[0]
                 bbe_subset = bbe.query('pre_split_bbe == 0 and prior_bbe == @pys and two_years_bbe == @tya')
-                bbe_mods = bbe_subset.iloc[:,:4].T.reset_index(drop=True)
+                bbe_mods = bbe_subset.iloc[:,:5].T.reset_index(drop=True)
                 bbe_mods.columns = bbe_mods.iloc[0]
                 bbe_mods = bbe_mods.drop([0,1]).reset_index(drop=True)
-                subset.iloc[:,:17] = subset.iloc[:,:17].values*bbe_mods.values
+                bbe_mods = bbe_mods[subset.iloc[:,:17].columns]
+                subset.iloc[:,:17] = subset.iloc[:,:17].values*bbe_mods.loc[0:1].values
                 stats = pd.DataFrame(round(subset.iloc[:,:17].sum(),2)).T
+                stats.iloc[:,:17] = (stats.iloc[:,:17].values+bbe_mods.loc[2:].values)
+                stats = stats.round(2)
             elif len(subset) == 2 and max(subset.game_year) == c_year:
                 if min(subset.game_year) == data_year:
                     tya = subset.thresholds[1]
@@ -315,15 +313,22 @@ def modify_pitchers(pitchers, old_pitch,date):
                     bbe_subset = bbe_subset.groupby('stat').agg(
                         ps=('pre_split','mean'),
                         py=('prior_year','mean'),
-                        ty=('two_years','mean'))
-                    bbe_subset['ps_share'] = round(bbe_subset.ps/(bbe_subset.ps+bbe_subset.ty),2)
-                    bbe_subset['ty_share'] = 1-bbe_subset.ps_share
+                        ty=('two_years','mean'),
+                        lg=('league_average','mean'))
+                    bbe_subset['total'] = bbe_subset.lg + bbe_subset.ty + bbe_subset.ps
+                    bbe_subset['ps_share'] = round(bbe_subset.ps/(bbe_subset.total),2)
+                    bbe_subset['ty_share'] = round(bbe_subset.ty/(bbe_subset.total),2)
+                    bbe_subset['lg_share'] = round(bbe_subset.lg/(bbe_subset.total),2)
                     bbe_subset.ps = bbe_subset.ps + (bbe_subset.py * bbe_subset.ps_share)
                     bbe_subset.ty = bbe_subset.ty + (bbe_subset.py * bbe_subset.ty_share)
-                    bbe_subset = bbe_subset.drop(columns=['py','ty_share','ps_share'])
-                    bbe_mods = bbe_subset.iloc[:,:4].T.reset_index(drop=True)
-                    subset.iloc[:,:17] = subset.iloc[:,:17].values*bbe_mods.values
+                    bbe_subset.lg = bbe_subset.lg + (bbe_subset.py * bbe_subset.lg_share)
+                    bbe_subset = bbe_subset.drop(columns=['py','ty_share','ps_share','lg_share','total'])
+                    bbe_mods = bbe_subset.iloc[:,:3].T.reset_index(drop=True)
+                    bbe_mods = bbe_mods[subset.iloc[:,:17].columns]
+                    subset.iloc[:,:17] = subset.iloc[:,:17].values*bbe_mods[0:2].values
                     stats = pd.DataFrame(round(subset.iloc[:,:17].sum(),2)).T
+                    stats.iloc[:,:17] = (stats.iloc[:,:17].values+bbe_mods.loc[2:].values)
+                    stats = stats.round(2)
                 if min(subset.game_year) == (data_year+1):
                     tya = subset.thresholds[1]
                     psb = subset.thresholds[0]
@@ -331,15 +336,22 @@ def modify_pitchers(pitchers, old_pitch,date):
                     bbe_subset = bbe_subset.groupby('stat').agg(
                         ps=('pre_split','mean'),
                         py=('prior_year','mean'),
-                        ty=('two_years','mean'))
-                    bbe_subset['ps_share'] = round(bbe_subset.ps/(bbe_subset.ps+bbe_subset.py),2)
-                    bbe_subset['ty_share'] = 1-bbe_subset.ps_share
+                        ty=('two_years','mean'),
+                        lg=('league_average','mean'))
+                    bbe_subset['total'] = bbe_subset.lg + bbe_subset.py + bbe_subset.ps
+                    bbe_subset['ps_share'] = round(bbe_subset.ps/(bbe_subset.total),2)
+                    bbe_subset['py_share'] = round(bbe_subset.py/(bbe_subset.total),2)
+                    bbe_subset['lg_share'] = round(bbe_subset.lg/(bbe_subset.total),2)
                     bbe_subset.ps = bbe_subset.ps + (bbe_subset.ty * bbe_subset.ps_share)
-                    bbe_subset.py = bbe_subset.py + (bbe_subset.ty * bbe_subset.ty_share)
-                    bbe_subset = bbe_subset.drop(columns=['ty','ty_share','ps_share'])
+                    bbe_subset.py = bbe_subset.py + (bbe_subset.ty * bbe_subset.py_share)
+                    bbe_subset.lg = bbe_subset.lg + (bbe_subset.ty * bbe_subset.lg_share)
+                    bbe_subset = bbe_subset.drop(columns=['ty','py_share','ps_share','lg_share','total'])
                     bbe_mods = bbe_subset.iloc[:,:4].T.reset_index(drop=True)
-                    subset.iloc[:,:17] = subset.iloc[:,:17].values*bbe_mods.values
+                    bbe_mods = bbe_mods[subset.iloc[:,:17].columns]
+                    subset.iloc[:,:17] = subset.iloc[:,:17].values*bbe_mods[0:2].values
                     stats = pd.DataFrame(round(subset.iloc[:,:17].sum(),2)).T
+                    stats.iloc[:,:17] = (stats.iloc[:,:17].values+bbe_mods.loc[2:].values)
+                    stats = stats.round(2)
             elif len(subset) == 1:
                 if subset.game_year[0] == c_year:
                     bbes = subset.thresholds[0]
@@ -365,16 +377,29 @@ def modify_pitchers(pitchers, old_pitch,date):
                 stats['game_year'] = max(subset.game_year)
             else:
                 stats[['game_year','pitch_count']] = subset[['game_year','pitch_count']].loc[0]
-            year = stats.game_year.loc[0]
             per_pitch_short = per_pitch_short.append(stats)
                 
-                
+        
     per_pitch_short = per_pitch_short.reset_index(drop=True)
-    per_pitch_short['pred_hr'] = result.predict(per_pitch_short[old_pitch.iloc[:,3:20].drop(columns='hr').columns]).round(2)
-    per_pitch_short = per_pitch_short.merge(outings,how='inner',on=['playerid','player_name'])            
-    return per_pitch_short
-        
-        
+    final_stats = pd.DataFrame()
+    pitch_list = list(grouped.pitch_type.unique())
+    for pitch in pitch_list:
+        newset = per_pitch_short.query('pitch_type == @pitch')
+        X = old_pitch.query('pitch_type==@pitch').iloc[:,:17]
+        y = X.hr
+        X = X.drop(columns='hr')
+        X = X[newset.iloc[:,:17].drop(columns='hr').columns]
+        try:
+            result = LassoCV(cv=5, random_state=79, max_iter=10000)
+            result = result.fit(X, y)
+        except ValueError:
+            result = LinearRegression()
+            result = result.fit(X, y)
+        newset['pred_hr'] = result.predict(newset[X.columns]).round(2)
+        final_stats = final_stats.append(newset)
+    final_stats = final_stats.merge(outings,how='inner',on=['playerid','player_name'])    
+    final_stats.pred_hr = final_stats.pred_hr.clip(lower=0.01)       
+    return final_stats
         
         
         

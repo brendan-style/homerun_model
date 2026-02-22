@@ -29,7 +29,7 @@ def backtest_unders(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amoun
         diff_thresholds = [.02,.025,.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
     
     if pred_hr_thresholds is None:
-        pred_hr_thresholds = [.92, .90, .88, .86, .85, .84, .82, .80, .78, .75, .65, .60, .0]
+        pred_hr_thresholds = [.92, .90, .88, .86, .85, .84, .82, .80,]
         #pred_hr_thresholds = [.06, .08, .1, .12, .14, .15, .16, 18, .2, .25]
     
     results = []
@@ -148,10 +148,10 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
     
     # Default thresholds if not provided
     if diff_thresholds is None:
-        diff_thresholds = [.015,.02,.025,.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
+        diff_thresholds = [.02,.025,.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
     
     if pred_hr_thresholds is None:
-        pred_hr_thresholds = [.06,.08, .1, .12, .14, .15, .16, .18, .2, .22, .25]
+        pred_hr_thresholds = [.1, .12, .14, .15, .16, .18, .2, .22, .25]
         #pred_hr_thresholds = [.06, .08, .1, .12, .14, .15, .16, 18, .2, .25]
     
     results = []
