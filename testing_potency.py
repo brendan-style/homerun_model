@@ -151,7 +151,7 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
         diff_thresholds = [.02,.025,.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
     
     if pred_hr_thresholds is None:
-        pred_hr_thresholds = [.1, .12, .14, .15, .16, .18, .2, .22, .25]
+        pred_hr_thresholds = [.14, .15, .16, .18, .2, .22, .25]
         #pred_hr_thresholds = [.06, .08, .1, .12, .14, .15, .16, 18, .2, .25]
     
     results = []
@@ -183,7 +183,7 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
                     continue
                 
                 if df_copy.loc[idx, 'hr'] == 1:
-                    # WIN: Player did NOT hit a home run
+                    # WIN: Player hit a home run
                     profit = round((10/odds) - 10,2)
                     df_copy.loc[idx, 'calculated_profit'] = profit
                 else:
