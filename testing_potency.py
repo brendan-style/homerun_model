@@ -151,7 +151,7 @@ def backtest_overs(df, diff_thresholds=None, pred_hr_thresholds=None, bet_amount
         diff_thresholds = [.02,.025,.03,.035,.04,.045,.05,.055,.06,.065,.07,.075]
     
     if pred_hr_thresholds is None:
-        pred_hr_thresholds = [.14, .15, .16, .18, .2, .22, .25]
+        pred_hr_thresholds = [.12,.14, .15, .16, .18, .2, .22, .25]
         #pred_hr_thresholds = [.06, .08, .1, .12, .14, .15, .16, 18, .2, .25]
     
     results = []
