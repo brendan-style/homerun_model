@@ -1,6 +1,3 @@
-# More Information regarding this model can be found on my online portfolio, which ca nbe accessed through my other github repo
-
-
 # Using ML to Find Value in HR Betting Markets
 
 Over the past few years, the market for sports betting has skyrocketed, from around $13b wagered in 2019 to $113b wagered in 2023. One of the more popular bets that a sportsbooks will receive is bets on home run props, and due to the relative rarity of home runs, these types of bets usually end up making a lot of money for the sportsbooks. For my senior year capstone project, I thought it would be a fun task to create a model that aims to find value in the market consistently enough to beat the sportsbooks in the long-run.

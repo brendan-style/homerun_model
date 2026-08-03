@@ -191,10 +191,11 @@ def modify_batters(batters,old_hits,date):
         pitch = rates.iloc[:,3][i]
         bucket_subset = pitch_avgs.query('pitch_type == @pitch')
         if i == 0:
-            new_stats = round(just_stats.loc[i]/(bucket_subset.iloc[:,1:bucket_subset.shape[1]].drop(columns=['pitch_count','bip'])),2)
+            first_stats = round(just_stats.loc[i]/(bucket_subset.iloc[:,1:bucket_subset.shape[1]].drop(columns=['pitch_count','bip'])),2)
         else:
             data = round(just_stats.loc[i]/(bucket_subset.iloc[:,1:bucket_subset.shape[1]].drop(columns=['pitch_count','bip'])),2)
-            new_stats = new_stats.append(data)
+            new_stats = pd.concat([first_stats,data],ignore_index=True)
+            first_stats = new_stats
     new_stats = new_stats.reset_index(drop=True)
     new_stats[['player_name','playerid','game_year','pitch_type','pitch_count','bip']] = rates[['player_name','playerid','game_year','pitch_type','pitch_count','bip']]
     new_stats["player_name"] = [" ".join(n.split(", ")[::-1]) for n in new_stats["player_name"]]
@@ -321,7 +322,11 @@ def modify_batters(batters,old_hits,date):
             if subset.empty:
                 continue
             stats[['player_name','playerid','pitch_type','bip']] = subset[['player_name','playerid','pitch_type','bip']].loc[0].values
-            per_pitch_short = per_pitch_short.append(stats)
+            if i == 0 and pitch == pitch_list[0]:
+                first_stats = stats
+            else:
+                per_pitch_short = pd.concat([first_stats,stats],ignore_index=True)
+                first_stats = per_pitch_short
                 
         
     per_pitch_short = per_pitch_short.reset_index(drop=True)
@@ -483,15 +488,16 @@ def modify_batters(batters,old_hits,date):
         throws = rates.p_throws[i]
         bucket_subset = pitch_avgs.query('stand == @stand and p_throws == @throws').reset_index(drop=True)
         if i == 0:
-            new_stats = round(just_stats.loc[i]/(bucket_subset.iloc[:,2:bucket_subset.shape[1]].drop(columns=['pitch_count','bip','age'])),2)
+            first_stats = round(just_stats.loc[i]/(bucket_subset.iloc[:,1:bucket_subset.shape[1]].drop(columns=['pitch_count','bip'])),2)
         else:
-            data = round(just_stats.loc[i]/(bucket_subset.iloc[:,2:bucket_subset.shape[1]].drop(columns=['pitch_count','bip','age'])),2)
-            new_stats = new_stats.append(data)
+            data = round(just_stats.loc[i]/(bucket_subset.iloc[:,1:bucket_subset.shape[1]].drop(columns=['pitch_count','bip'])),2)
+            new_stats = pd.concat([first_stats,data],ignore_index=True)
+            first_stats = new_stats
     new_stats = new_stats.reset_index(drop=True)
     new_stats[['player_name','playerid','stand','p_throws','pitch_count','bip']] = rates[['player_name','playerid','stand','p_throws','pitch_count','bip']]
     new_stats["player_name"] = [" ".join(n.split(", ")[::-1]) for n in new_stats["player_name"]]
     new_stats['player_name'] = new_stats['player_name'].apply(unidecode)
-    new_stats.iloc[:,:12] = new_stats.iloc[:,:12].astype(float).round(2)
+    new_stats = new_stats.drop(columns='age')
         
     per_pitch_split = pd.DataFrame()
     options = new_stats[['player_name','playerid','stand','p_throws','bip']].sort_values(by='player_name')
@@ -504,21 +510,29 @@ def modify_batters(batters,old_hits,date):
         throws = options['p_throws'][i]
         pitch = new_stats.query('playerid == @name and p_throws == @throws').reset_index(drop=True)
         player = per_pitch_short.query('playerid == @name').reset_index(drop=True)
-        if bip < 50:
+        if bip < 50 and not player.empty:
             base_weight = (50 - bip) / 50
             play_stats = pd.DataFrame(player.iloc[:,:13].sum()/len(player)).T
             play_stats['bip'] = sum(player.bip)
             player_confidence = min(play_stats.bip[0] / 200, 1.0)
             player_weight = base_weight * (0.5 + 0.4 * player_confidence)
             league_weight = base_weight - player_weight
-            for p in range(0,11):
-                pitch.iloc[:,p] = (pitch.iloc[:,p][0]*(bip/50) + (play_stats.iloc[:,p+2][0]*(player_weight) + (league_weight))).round(2)
-        per_pitch_split = per_pitch_split.append(pitch)
-        
-    per_pitch_split = per_pitch_split.reset_index(drop=True)
+            for p in range(0,13):
+                if p == 8:
+                    continue
+                pitch.iloc[:,p] = (pitch.iloc[:,p][0]*(bip/50) + (play_stats.iloc[:,p][0]*(player_weight) + (league_weight))).round(2)
+        if i == 0:
+            first_stats = pitch
+        else:
+            per_pitch_split = pd.concat([first_stats,pitch],ignore_index=True)
+            first_stats = per_pitch_split
+
+    per_pitch_split = new_stats.reset_index(drop=True)
     per_pitch_split['splits'] = per_pitch_split.apply(lambda row: 'plat_disadv' if row['stand'] == row['p_throws'] else 'plat_adv', axis=1)
     per_pitch_split = per_pitch_split.drop_duplicates().dropna()
-    
+    per_pitch_split = per_pitch_split.drop(columns=['p_throws','stand'])
+    names = per_pitch_split[['player_name','playerid']]
+    names = names.drop_duplicates(subset=['player_name','playerid'], keep='first').reset_index(drop=True)
     names['plat_disc'] = 0
     for i in range(0,len(names)):
         p_id = names['playerid'][i]

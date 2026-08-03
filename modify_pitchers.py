@@ -15,7 +15,7 @@ def modify_pitchers(pitchers, old_pitch,date):
     bbe = pd.read_csv('bbe_weights_pitchers.csv')
     data_year = int(date[:4])-2
     c_year = int(date[:4])
-    pitchers = pitchers.query('game_year >= @data_year and game_date <= @date')
+    #pitchers = pitchers.query('game_year >= @data_year and game_date <= @date')
     fbb = pitchers.query('in_play==1')
     fbb = fbb.dropna(subset=['estimated_woba_using_speedangle'])
     
@@ -86,7 +86,7 @@ def modify_pitchers(pitchers, old_pitch,date):
     
     
     grouped = grouped.dropna()
-    grouped = grouped.query('bip >= 10')
+    #grouped = grouped.query('bip >= 10')
     pitch_list = list(grouped.pitch_type.unique())
     pitch_avgs = grouped.groupby('pitch_type').agg({**{col: 'sum' for col in list(grouped.columns[6:21])}})
     pitch_avgs[['velo','spin_rate','x_move','z_move','extension','xwobacon','ev','la']] = 0
@@ -246,10 +246,11 @@ def modify_pitchers(pitchers, old_pitch,date):
         pitch = rates.iloc[:,3][i]
         bucket_subset = pitch_avgs.query('pitch_type == @pitch')
         if i == 0:
-            new_stats = round(just_stats.loc[i]/(bucket_subset.iloc[:,1:bucket_subset.shape[1]].drop(columns=['pitch_count','bip'])),2)
+            first_stats = round(just_stats.loc[i]/(bucket_subset.iloc[:,1:bucket_subset.shape[1]].drop(columns=['pitch_count','bip'])),2)
         else:
             data = round(just_stats.loc[i]/(bucket_subset.iloc[:,1:bucket_subset.shape[1]].drop(columns=['pitch_count','bip'])),2)
-            new_stats = new_stats.append(data)
+            new_stats = pd.concat([first_stats,data],ignore_index=True)
+            first_stats = new_stats
     new_stats = new_stats.reset_index(drop=True)
     new_stats[['player_name','playerid','game_year','pitch_type','pitch_count','bip']] = rates[['player_name','playerid','game_year','pitch_type','pitch_count','bip']]
     new_stats["player_name"] = [" ".join(n.split(", ")[::-1]) for n in new_stats["player_name"]]
@@ -272,8 +273,6 @@ def modify_pitchers(pitchers, old_pitch,date):
             if sum(player.query('game_year == @max_year').pitch_count) >= 150 and max(subset.game_year) != max_year:
                 continue
             subset['thresholds'] = 0
-            if subset.loc[0].bip < 10:
-                subset = subset.drop(0).reset_index(drop=True)
             for q in range(len(subset)):
                     samp = subset.bip[q]
                     subset['thresholds'][q] = thresholds[np.abs(thresholds - samp).argmin()]
@@ -377,7 +376,11 @@ def modify_pitchers(pitchers, old_pitch,date):
                 stats['game_year'] = max(subset.game_year)
             else:
                 stats[['game_year','pitch_count']] = subset[['game_year','pitch_count']].loc[0]
-            per_pitch_short = per_pitch_short.append(stats)
+            if i == 0 and pitch == pitch_list[0]:
+                first_stats = stats
+            else:
+                per_pitch_short = pd.concat([first_stats,stats],ignore_index=True)
+                first_stats = per_pitch_short
                 
         
     per_pitch_short = per_pitch_short.reset_index(drop=True)
@@ -385,6 +388,8 @@ def modify_pitchers(pitchers, old_pitch,date):
     pitch_list = list(grouped.pitch_type.unique())
     for pitch in pitch_list:
         newset = per_pitch_short.query('pitch_type == @pitch')
+        if newset.empty:
+            continue
         X = old_pitch.query('pitch_type==@pitch').iloc[:,:17]
         y = X.hr
         X = X.drop(columns='hr')
@@ -396,7 +401,10 @@ def modify_pitchers(pitchers, old_pitch,date):
             result = LinearRegression()
             result = result.fit(X, y)
         newset['pred_hr'] = result.predict(newset[X.columns]).round(2)
-        final_stats = final_stats.append(newset)
+        if pitch == pitch_list[0]:
+            final_stats = newset
+        else:
+            final_stats = pd.concat([final_stats,newset],ignore_index=True)
     final_stats = final_stats.merge(outings,how='inner',on=['playerid','player_name'])    
     final_stats.pred_hr = final_stats.pred_hr.clip(lower=0.01)       
     return final_stats
